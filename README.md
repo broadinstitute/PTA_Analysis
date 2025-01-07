@@ -72,8 +72,8 @@ This pipeline processes WGS reads mapped against the **GRCh38 reference genome**
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-username>/PTA-WGS-Analysis.git
-   cd PTA-WGS-Analysis
+   git clone git@github.com:broadinstitute/PTA_Analysis.git
+   cd PTA_Analysis
    ```
 
 2. Install dependencies:
@@ -111,19 +111,3 @@ java -jar cromwell.jar run main.wdl -i inputs.json
 - GATK Documentation: [https://gatk.broadinstitute.org/](https://gatk.broadinstitute.org/)
 - PTATO Tool: [https://github.com/ToolsVanBox/PTATO](https://github.com/ToolsVanBox/PTATO)
 - Reference Genome (GRCh38): [Ensembl](https://www.ensembl.org/index.html)
-
----
-
-## Contributing
-
-Contributions are welcome! Please submit a pull request or open an issue to suggest improvements.
-
----
-
-## License
-
-This repository is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-Let me know if you'd like to add more specific details or adjust the sections!
