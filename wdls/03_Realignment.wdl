@@ -13,6 +13,7 @@ workflow BaseQualityScoreRecalibration {
     Int preemptible_tries = 1
     Int memory_gb = 8
     Int disk_gb = 50
+    Int cpu = 4
     String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.3.0.0"
   }
 
@@ -28,6 +29,7 @@ workflow BaseQualityScoreRecalibration {
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
       disk_gb = disk_gb,
+      cpu = cpu,
       gatk_docker = gatk_docker
   }
 
@@ -42,6 +44,7 @@ workflow BaseQualityScoreRecalibration {
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
       disk_gb = disk_gb,
+      cpu = cpu,
       gatk_docker = gatk_docker
   }
 
@@ -64,6 +67,7 @@ task BaseRecalibrator {
     Int preemptible_tries
     Int memory_gb
     Int disk_gb
+    Int cpu
     String gatk_docker
   }
 
@@ -79,6 +83,7 @@ task BaseRecalibrator {
     docker: gatk_docker
     memory: "~{memory_gb} GiB"
     disks: "local-disk ~{disk_gb} HDD"
+    cpu: cpu
     preemptible: preemptible_tries
   }
 
@@ -99,6 +104,7 @@ task ApplyBQSR {
     Int preemptible_tries
     Int memory_gb
     Int disk_gb
+    Int cpu
     String gatk_docker
   }
 
@@ -114,6 +120,7 @@ task ApplyBQSR {
     docker: gatk_docker
     memory: "~{memory_gb} GiB"
     disks: "local-disk ~{disk_gb} HDD"
+    cpu: cpu
     preemptible: preemptible_tries
   }
 

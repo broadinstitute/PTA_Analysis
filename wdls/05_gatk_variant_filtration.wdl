@@ -10,6 +10,7 @@ workflow VariantFiltration {
     Int preemptible_tries = 1
     Int memory_gb = 4
     Int disk_gb = 20
+    Int cpu = 4
     String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.3.0.0"
   }
 
@@ -23,6 +24,7 @@ workflow VariantFiltration {
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
       disk_gb = disk_gb,
+      cpu = cpu,
       gatk_docker = gatk_docker
   }
 
@@ -42,6 +44,7 @@ task ApplyVariantFiltration {
     Int preemptible_tries
     Int memory_gb
     Int disk_gb
+    Int cpu
     String gatk_docker
   }
 
@@ -68,6 +71,7 @@ task ApplyVariantFiltration {
     memory: "~{memory_gb} GiB"
     disks: "local-disk ~{disk_gb} HDD"
     preemptible: preemptible_tries
+    cpu: cpu
   }
 
   output {
