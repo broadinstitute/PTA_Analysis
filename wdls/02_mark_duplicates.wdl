@@ -8,6 +8,7 @@ workflow MarkDuplicatesWorkflow {
     Int preemptible_tries = 1
     Int memory_gb = 8
     Int disk_gb = 50
+    Int cpu = 4
     String docker = "us.gcr.io/broad-gotc-prod/picard-cloud:2.26.10"
   }
 
@@ -19,6 +20,7 @@ workflow MarkDuplicatesWorkflow {
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
       disk_gb = disk_gb,
+      cpu = cpu,
       docker = docker
   }
 
@@ -37,11 +39,12 @@ task MarkDuplicates {
     Int preemptible_tries
     Int memory_gb
     Int disk_gb
+    Int cpu
     String docker
   }
 
   command {
-    java -Xmx4G -jar /usr/picard/picard.jar MarkDuplicates \
+    java -Xmx~{memory_gb}G -jar /usr/picard/picard.jar MarkDuplicates \
       INPUT=~{input_bam} \
       OUTPUT=~{output_bam_basename}.bam \
       METRICS_FILE=~{metrics_filename} \
@@ -50,8 +53,9 @@ task MarkDuplicates {
 
   runtime {
     docker: docker
-    memory: "8 GiB"
-    disks: "local-disk 50 HDD"
+    memory: "~{memory_gb} GiB"
+    disks: "local-disk ~{disk_gb} HDD"
+    cpu: cpu  # Static integer value
     preemptible: preemptible_tries
   }
 
