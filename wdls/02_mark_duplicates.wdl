@@ -10,6 +10,7 @@ workflow MarkDuplicatesWorkflow {
     Int disk_gb = 50
     Int cpu = 4
     String docker = "us.gcr.io/broad-gotc-prod/picard-cloud:2.26.10"
+    File reference_fasta  # Add reference genome input
   }
 
   call MarkDuplicates {
@@ -21,7 +22,8 @@ workflow MarkDuplicatesWorkflow {
       memory_gb = memory_gb,
       disk_gb = disk_gb,
       cpu = cpu,
-      docker = docker
+      docker = docker,
+      reference_fasta = reference_fasta  # Pass reference to task
   }
 
   output {
@@ -41,6 +43,7 @@ task MarkDuplicates {
     Int disk_gb
     Int cpu
     String docker
+    File reference_fasta  # Add reference genome
   }
 
   command {
@@ -48,14 +51,15 @@ task MarkDuplicates {
       INPUT=~{input_bam} \
       OUTPUT=~{output_bam_basename}.bam \
       METRICS_FILE=~{metrics_filename} \
-      CREATE_INDEX=true
+      CREATE_INDEX=true \
+      REFERENCE_SEQUENCE=~{reference_fasta}  # Pass reference genome
   }
 
   runtime {
     docker: docker
     memory: "~{memory_gb} GiB"
     disks: "local-disk ~{disk_gb} HDD"
-    cpu: cpu  # Static integer value
+    cpu: cpu
     preemptible: preemptible_tries
   }
 
@@ -65,3 +69,4 @@ task MarkDuplicates {
     File duplicate_metrics = "~{metrics_filename}"
   }
 }
+
