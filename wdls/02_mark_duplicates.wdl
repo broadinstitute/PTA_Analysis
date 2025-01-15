@@ -6,6 +6,8 @@ workflow MarkDuplicatesWorkflow {
     String output_bam_basename
     String metrics_filename
     Int preemptible_tries = 1
+    Int memory_gb = 8
+    Int disk_gb = 50
     String docker = "us.gcr.io/broad-gotc-prod/picard-cloud:2.26.10"
   }
 
@@ -15,6 +17,8 @@ workflow MarkDuplicatesWorkflow {
       output_bam_basename = output_bam_basename,
       metrics_filename = metrics_filename,
       preemptible_tries = preemptible_tries,
+      memory_gb = memory_gb,
+      disk_gb = disk_gb,
       docker = docker
   }
 
@@ -31,6 +35,8 @@ task MarkDuplicates {
     String output_bam_basename
     String metrics_filename
     Int preemptible_tries
+    Int memory_gb
+    Int disk_gb
     String docker
   }
 
