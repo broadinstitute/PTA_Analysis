@@ -64,6 +64,10 @@ workflow SRFlowcell {
 
         String bwa_options = "-c 100 -M"  # PTA-specific BWA options
 
+        Int? bwa_cpu
+        Int? bwa_memory
+        Int? bwa_disk
+
     }
 
 
@@ -147,7 +151,11 @@ workflow SRFlowcell {
             mark_short_splits_as_secondary = true,
             read_group = RG,
             prefix = SM + ".aligned",
-            bwa_options = bwa_options
+            bwa_options = bwa_options,
+            cpu_cores = bwa_cpu,           # New optional input
+            memory_gb = bwa_memory,        # New optional input
+            disk_gb = bwa_disk             # New optional input
+
         #bwa_options = "-c 100 -M"  # PTA-specific BWA options
     }
 

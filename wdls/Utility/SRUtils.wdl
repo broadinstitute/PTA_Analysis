@@ -164,7 +164,12 @@ task BwaMem2 {
 
         Boolean mark_short_splits_as_secondary = false
         String bwa_options = ""  # Custom BWA options, e.g., "-c 100 -M"
+    
+        Int? cpu_cores  # Expose runtime attributes
+        Int? memory_gb
+        Int? disk_gb
 
+    
         RuntimeAttr? runtime_attr_override
     }
     Int disk_size = 1 + 4*ceil(size(fq_end1, "GB"))
@@ -215,7 +220,6 @@ task BwaMem2 {
     output {
         File bam = "~{prefix}.bam"
     }
-
     #########################
     RuntimeAttr default_attr = object {
         cpu_cores:          2,
@@ -227,10 +231,11 @@ task BwaMem2 {
         docker:             "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
     }
     RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+
     runtime {
-        cpu:                    select_first([runtime_attr.cpu_cores,         default_attr.cpu_cores])
-        memory:                 select_first([runtime_attr.mem_gb,            default_attr.mem_gb]) + " GiB"
-        disks: "local-disk " +  select_first([runtime_attr.disk_gb,           default_attr.disk_gb]) + " HDD"
+        cpu:    select_first([runtime_attr.cpu_cores, cpu_cores, default_attr.cpu_cores])
+        memory: select_first([runtime_attr.mem_gb, memory_gb, default_attr.mem_gb]) + " GiB"
+        disks:  "local-disk " + select_first([runtime_attr.disk_gb, disk_gb, default_attr.disk_gb]) + " HDD"
         bootDiskSizeGb:         select_first([runtime_attr.boot_disk_gb,      default_attr.boot_disk_gb])
         preemptible:            select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
         maxRetries:             select_first([runtime_attr.max_retries,       default_attr.max_retries])
