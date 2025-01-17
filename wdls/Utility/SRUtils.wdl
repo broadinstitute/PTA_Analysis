@@ -152,7 +152,7 @@ task BwaMem2 {
         File ref_fasta
         File ref_fasta_index
         File ref_dict
-        #File ref_0123
+        File ref_0123
         File ref_amb
         File ref_ann
         File ref_bwt
@@ -181,7 +181,7 @@ task BwaMem2 {
                       + 4*ceil(size(ref_ann, "GB"))
                       + 4*ceil(size(ref_bwt, "GB"))
                       + 4*ceil(size(ref_pac, "GB"))
-    #                  + 4*ceil(size(ref_0123, "GB"))
+                      + 4*ceil(size(ref_0123, "GB"))
 
     String rg_arg = if defined(read_group) then " -R " else ""
 
