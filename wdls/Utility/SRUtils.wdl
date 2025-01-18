@@ -152,7 +152,7 @@ task BwaMem2 {
         File ref_fasta
         File ref_fasta_index
         File ref_dict
-        File ref_0123
+        #File ref_0123
         File ref_amb
         File ref_ann
         File ref_bwt
@@ -181,7 +181,7 @@ task BwaMem2 {
                       + 4*ceil(size(ref_ann, "GB"))
                       + 4*ceil(size(ref_bwt, "GB"))
                       + 4*ceil(size(ref_pac, "GB"))
-                      + 4*ceil(size(ref_0123, "GB"))
+    #                  + 4*ceil(size(ref_0123, "GB"))
 
     String rg_arg = if defined(read_group) then " -R " else ""
 
@@ -202,10 +202,15 @@ task BwaMem2 {
         # -Y            use soft clipping for supplementary alignments
         # -R STR        read group header line such as '@RG\tID:foo\tSM:bar' [null]
         # -M            mark shorter split hits as secondary
-
-        bwa-mem2 mem \
+        # -c INT        maximum number of seeds to consider [100000000]
+        # -p            enable pair-end mode
+        # -v INT        verbose level: 1=error, 2=warning, 3=message, 4+=debugging [3]
+        # -t INT        number of threads [1]
+        # -Y            use soft clipping for supplementary alignments
+        # -R STR        read group header line such as '@RG\tID:foo\tSM:bar' [null]
+        # -M            mark shorter split hits as secondary
+        bwa mem \
             -K 100000000 \
-            -v 3 \
             -t ${np} \
             -Y \
             ~{rg_arg}'~{default="" read_group}' \
@@ -215,6 +220,20 @@ task BwaMem2 {
             ~{fq_end1} \
             ~{fq_end2} | \
         samtools view -1 - > ~{prefix}.bam
+
+
+        #bwa-mem2 mem \
+        #    -K 100000000 \
+        #    -v 3 \
+        #    -t ${np} \
+        #    -Y \
+        #    ~{rg_arg}'~{default="" read_group}' \
+        #    ~{true='-M' false="" mark_short_splits_as_secondary} \
+        #    ~{bwa_options} \
+        #    ~{ref_fasta} \
+        #    ~{fq_end1} \
+        #    ~{fq_end2} | \
+        #samtools view -1 - > ~{prefix}.bam
     >>>
 
     output {
