@@ -1,157 +1,79 @@
 version 1.0
 
-workflow BwaAlignmentWorkflow {
+workflow BwaMem2Alignment {
 
     input {
-        File fq_end1
-        File fq_end2
-        File ref_fasta
-        File ref_fasta_index
-        File ref_dict
-        String? read_group
-        String prefix = "aligned"
+        File fq1           # FASTQ file for read 1
+        File fq2           # FASTQ file for read 2
+        File ref_fasta     # Reference genome FASTA file
+        String read_group  # Read group information (e.g., '@RG\tID:foo\tSM:bar')
+        String prefix = "aligned"  # Output file prefix
 
-        Int? bwa_cpu_cores
-        Int? bwa_memory_gb
-        Int? bwa_disk_gb
-
-        Int? sort_cpu_cores
-        Int? sort_memory_gb
-        Int? sort_disk_gb
+        Int? cpu_cores     # Number of CPU cores
+        Int? memory_gb     # Amount of memory in GB
+        Int? disk_gb       # Amount of disk space in GB
     }
 
-    call Bwa {
+    call BwaMem2Task {
         input:
-            fq_end1 = fq_end1,
-            fq_end2 = fq_end2,
+            fq1 = fq1,
+            fq2 = fq2,
             ref_fasta = ref_fasta,
-            ref_fasta_index = ref_fasta_index,
-            ref_dict = ref_dict,
             read_group = read_group,
             prefix = prefix,
-            cpu_cores = bwa_cpu_cores,
-            memory_gb = bwa_memory_gb,
-            disk_gb = bwa_disk_gb
-    }
-
-    call SortBam {
-        input:
-            unsorted_bam = Bwa.bam,
-            prefix = prefix + ".sorted",
-            cpu_cores = sort_cpu_cores,
-            memory_gb = sort_memory_gb,
-            disk_gb = sort_disk_gb
+            cpu_cores = cpu_cores,
+            memory_gb = memory_gb,
+            disk_gb = disk_gb
     }
 
     output {
-        File sorted_bam = SortBam.sorted_bam
-        File sorted_bai = SortBam.sorted_bai
+        File aligned_bam = BwaMem2Task.bam
     }
 }
 
-task Bwa {
+
+task BwaMem2Task {
     input {
-        File fq_end1
-        File fq_end2
-        File ref_fasta
-        File ref_fasta_index
-        File ref_dict
-        String? read_group    # Optional read group information
-        String prefix = "aligned"  # Prefix for output BAM file
-        Int? cpu_cores        # Optional number of CPU cores for alignment
-        Int? memory_gb        # Optional memory allocation
-        Int? disk_gb          # Optional disk space allocation
+        File fq1           # FASTQ file for read 1
+        File fq2           # FASTQ file for read 2
+        File ref_fasta     # Reference genome FASTA file
+        String read_group  # Read group information
+        String prefix = "aligned"  # Output file prefix
+
+        Int? cpu_cores     # Number of CPU cores
+        Int? memory_gb     # Amount of memory in GB
+        Int? disk_gb       # Amount of disk space in GB
     }
 
-    Int disk_size = 1 + 4 * ceil(size(fq_end1, "GB")) 
-                      + 4 * ceil(size(fq_end2, "GB")) 
-                      + 4 * ceil(size(ref_fasta, "GB")) 
-                      + 4 * ceil(size(ref_fasta_index, "GB")) 
-                      + 4 * ceil(size(ref_dict, "GB"))
+    Int default_cpu = 4
+    Int default_memory = 16
+    Int default_disk = 100
 
-    String rg_arg = if defined(read_group) then "-R ~{read_group}" else ""
+    Int effective_cpu = select_first([cpu_cores, default_cpu])
+    Int effective_memory = select_first([memory_gb, default_memory])
+    Int effective_disk = select_first([disk_gb, default_disk])
 
-    command <<<!
+    command <<< 
         set -euxo pipefail
-        # Calculate available processors
-        np=$(cat /proc/cpuinfo | grep ^processor | tail -n1 | awk '{print $NF+1}')
-        if [[ ${np} -gt 2 ]] ; then
-            np=$((np-1))
-        fi
 
-        # Perform alignment using bwa mem
-        bwa mem \
-            -t ${np} \
-            ~{rg_arg} \
+        bwa-mem2 mem \
+            -K 100000000 \
+            -t ~{effective_cpu} \
+            -R '~{read_group}' \
+            -c 100 -M \
             ~{ref_fasta} \
-            ~{fq_end1} \
-            ~{fq_end2} | \
-        samtools view -1 - > ~{prefix}.bam
+            ~{fq1} ~{fq2} | \
+        samtools view -bS -o ~{prefix}.bam
     >>>
 
     output {
-        File bam = "~{prefix}.bam"  # Output unsorted BAM file
+        File bam = "~{prefix}.bam"
     }
 
     runtime {
-        cpu: select_first([cpu_cores, 2])
-        memory: select_first([memory_gb, 8]) + " GiB"
-        disks: "local-disk " + select_first([disk_gb, disk_size]) + " HDD"
+        cpu: effective_cpu
+        memory: effective_memory + " GiB"
+        disks: "local-disk " + effective_disk + " HDD"
         docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
     }
 }
-
-    #########################
-    
-    RuntimeAttr default_attr = object {
-        cpu_cores:          2,
-        mem_gb:             16,
-        disk_gb:            disk_size,
-        boot_disk_gb:       10,
-        preemptible_tries:  1,
-        max_retries:        1,
-        docker:             "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
-    }
-    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
-
-    runtime {
-        cpu:    select_first([runtime_attr.cpu_cores, cpu_cores, default_attr.cpu_cores])
-        memory: select_first([runtime_attr.mem_gb, memory_gb, default_attr.mem_gb]) + " GiB"
-        disks:  "local-disk " + select_first([runtime_attr.disk_gb, disk_gb, default_attr.disk_gb]) + " HDD"
-        bootDiskSizeGb:         select_first([runtime_attr.boot_disk_gb,      default_attr.boot_disk_gb])
-        preemptible:            select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
-        maxRetries:             select_first([runtime_attr.max_retries,       default_attr.max_retries])
-        docker:                 select_first([runtime_attr.docker,            default_attr.docker])
-    }
-}
-
-task SortBam {
-    input {
-        File unsorted_bam
-        String prefix = "sorted"
-        Int? cpu_cores
-        Int? memory_gb
-        Int? disk_gb
-    }
-
-    Int disk_size = 1 + 2 * ceil(size(unsorted_bam, "GB"))
-
-    command <<<!
-        set -euxo pipefail
-        samtools sort -@~{cpu_cores} -m ~{memory_gb}G -o ~{prefix}.bam ~{unsorted_bam}
-        samtools index ~{prefix}.bam
-    >>>
-
-    output {
-        File sorted_bam = "~{prefix}.bam"
-        File sorted_bai = "~{prefix}.bam.bai"
-    }
-
-    runtime {
-        cpu: select_first([cpu_cores, 2])
-        memory: select_first([memory_gb, 8]) + " GiB"
-        disks: "local-disk " + select_first([disk_gb, disk_size]) + " HDD"
-        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
-    }
-}
-
