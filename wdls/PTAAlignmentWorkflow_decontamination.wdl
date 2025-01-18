@@ -62,7 +62,7 @@ workflow SRFlowcell {
 
         String platform = "illumina"
 
-        String bwa_options = "-c 100 -M"  # PTA-specific BWA options
+        String bwa_options = ""  # PTA-specific BWA options
 
         Int? bwa_cpu
         Int? bwa_memory
