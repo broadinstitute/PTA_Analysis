@@ -134,7 +134,14 @@ workflow SRFlowcell {
     File fq_e2 = select_first([DecontaminateSample.decontaminated_fq2, fq_end2, t_003_Bam2Fastq.fq_end2])
 
     #String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\tID:" + SM + "_" + LB + "\tPL:" + platform + "\tLB:" + LB + "\tSM:" + SM])
-    String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\\tID:" + SM + "_" + LB + "\\tPL:" + platform + "\\tLB:" + LB + "\\tSM:" + SM])
+    #String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\\tID:" + SM + "_" + LB + "\\tPL:" + platform + "\\tLB:" + LB + "\\tSM:" + SM])
+    # Extract read group from FASTQ
+    call SRUTIL.ExtractReadGroup {
+        input:
+            fastq = fq_end1,
+            sample_name = SM
+    }
+    String RG = SRUTIL.ExtractReadGroup
 
     # Align reads to reference with BWA-MEM2: (slightly modified by Shadi)
     call SRUTIL.BwaMem2 as t_005_AlignReads {
@@ -144,7 +151,7 @@ workflow SRFlowcell {
             ref_fasta = ref_map["fasta"],
             ref_fasta_index = ref_map["fai"],
             ref_dict = ref_map["dict"],
-            #ref_0123 = ref_map["0123"],
+            ref_0123 = ref_map["0123"],
             ref_amb = ref_map["amb"],
             ref_ann = ref_map["ann"],
             ref_bwt = ref_map["bwt"],

@@ -12,7 +12,7 @@ workflow AlignAndIndexWorkflow {
         Int threads = 4                        # Number of threads for BWA
         Int memoryGb = 16                      # Memory allocated in GB
         Int diskGb = 100                       # Disk size in GB
-        String dockerImage = "quay.io/biocontainers/bwa:0.7.17--hed695b0_7"  # Docker image
+        String dockerImage = "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2" #"quay.io/biocontainers/bwa:0.7.17--hed695b0_7"  # Docker image
     }
 
     call AlignReads {
@@ -46,7 +46,7 @@ task AlignReads {
         Int threads = 4
         Int memoryGb = 16
         Int diskGb = 100
-        String dockerImage = "quay.io/biocontainers/bwa:0.7.17--hed695b0_7"
+        String dockerImage = "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2" #"quay.io/biocontainers/bwa:0.7.17--hed695b0_7"
     }
 
     command <<<

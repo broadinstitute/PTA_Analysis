@@ -143,6 +143,26 @@ task Bam2FqPicard {
     }
 
 }
+task ExtractReadGroup {
+    input {
+        File fastq
+        String sample_name
+    }
+
+    command <<<
+        zcat ~{fastq} | head -n 1 | sed 's/^@//' | awk -F':' '{printf "@RG\\tID:%s_%s\\tPL:illumina\\tLB:%s\\tSM:%s\\n", $1, $3, $NF, "~{sample_name}"}'
+    >>>
+
+    output {
+        String read_group = read_string(stdout())
+    }
+
+    runtime {
+        cpu: 1
+        memory: "1G"
+        disk: "10G"
+    }
+}
 
 task BwaMem2 {
     input {
@@ -152,7 +172,7 @@ task BwaMem2 {
         File ref_fasta
         File ref_fasta_index
         File ref_dict
-        #File ref_0123
+        File ref_0123
         File ref_amb
         File ref_ann
         File ref_bwt
@@ -181,7 +201,7 @@ task BwaMem2 {
                       + 4*ceil(size(ref_ann, "GB"))
                       + 4*ceil(size(ref_bwt, "GB"))
                       + 4*ceil(size(ref_pac, "GB"))
-    #                  + 4*ceil(size(ref_0123, "GB"))
+                      + 4*ceil(size(ref_0123, "GB"))
 
     String rg_arg = if defined(read_group) then " -R " else ""
 
@@ -209,8 +229,9 @@ task BwaMem2 {
         # -Y            use soft clipping for supplementary alignments
         # -R STR        read group header line such as '@RG\tID:foo\tSM:bar' [null]
         # -M            mark shorter split hits as secondary
-        bwa mem \
+        bwa-mem2 mem \
             -K 100000000 \
+            -v 3 \
             -t ${np} \
             -Y \
             ~{rg_arg}'~{default="" read_group}' \
@@ -221,10 +242,8 @@ task BwaMem2 {
             ~{fq_end2} | \
         samtools view -1 - > ~{prefix}.bam
     >>>
-
-        #bwa-mem2 mem \
+        #bwa mem \
         #    -K 100000000 \
-        #    -v 3 \
         #    -t ${np} \
         #    -Y \
         #    ~{rg_arg}'~{default="" read_group}' \
@@ -235,6 +254,7 @@ task BwaMem2 {
         #    ~{fq_end2} | \
         #samtools view -1 - > ~{prefix}.bam
     #>>>
+
 
     output {
         File bam = "~{prefix}.bam"
