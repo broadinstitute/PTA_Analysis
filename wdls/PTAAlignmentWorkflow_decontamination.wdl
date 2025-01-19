@@ -133,25 +133,26 @@ workflow SRFlowcell {
     File fq_e1 = select_first([DecontaminateSample.decontaminated_fq1, fq_end1, t_003_Bam2Fastq.fq_end1])
     File fq_e2 = select_first([DecontaminateSample.decontaminated_fq2, fq_end2, t_003_Bam2Fastq.fq_end2])
 
-    #String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\tID:" + SM + "_" + LB + "\tPL:" + platform + "\tLB:" + LB + "\tSM:" + SM])
-    #String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\\tID:" + SM + "_" + LB + "\\tPL:" + platform + "\\tLB:" + LB + "\\tSM:" + SM])
-    # Extract read group from FASTQ
-    # Extract read group from FASTQ if `fq_end1` is defined
+# Declare the variable for the read group
+    String final_RG
+
+    # Conditional block to handle the read group
     if (defined(fq_end1)) {
+        # Extract the read group if fq_end1 is defined
         call SRUTIL.ExtractReadGroup as extract_RG {
             input:
                 fastq = fq_end1,
                 sample_name = SM
         }
+        # Assign the output to final_RG
+        final_RG = extract_RG.read_group
+    } else {
+        # Provide a default read group if fq_end1 is not defined
+        final_RG = "@RG\tID:defaultID\tPL:illumina\tLB:defaultLibrary\tSM:" + SM
     }
 
-# Provide a fallback read group
-    String final_RG = select_first([
-        extract_RG.read_group,
-        "@RG\tID:defaultID\tPL:illumina\tLB:defaultLibrary\tSM:" + SM
-    ])
-
-# Pass `final_RG` to downstream tasks
+    
+    # Pass `final_RG` to downstream tasks
     # Align reads to reference with BWA-MEM2: (slightly modified by Shadi)
     call SRUTIL.BwaMem2 as t_005_AlignReads {
         input:

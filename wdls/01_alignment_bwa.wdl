@@ -14,6 +14,7 @@ workflow AlignAndIndexWorkflow {
         Int threads                             # Number of threads for BWA
         Int memoryGb                            # Memory allocated in GB
         Int diskGb                              # Disk size in GB
+        Int preemptible = 0                     # Number of preemptible attempts
         String dockerImage                      # Docker image to use
     }
 
@@ -34,6 +35,7 @@ workflow AlignAndIndexWorkflow {
             threads = threads,
             memoryGb = memoryGb,
             diskGb = diskGb,
+            preemptible = preemptible,
             dockerImage = dockerImage
     }
 
@@ -59,8 +61,9 @@ task ExtractReadGroup {
 
     runtime {
         cpu: 1
-        memory: "1G"
-        disk: "10G"
+        memory: "160G"
+        disk: "200G"
+        preemptible: 0
         docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
     }
 }
@@ -78,6 +81,7 @@ task AlignReads {
         Int threads
         Int memoryGb
         Int diskGb
+        Int preemptible
         String dockerImage
     }
 
@@ -104,6 +108,7 @@ task AlignReads {
         cpu: threads
         memory: "~{memoryGb} GiB"
         disks: "local-disk ~{diskGb} HDD"
+        preemptible: preemptible
         docker: dockerImage
     }
 
@@ -111,6 +116,7 @@ task AlignReads {
         threads: {description: "Number of threads for BWA"}
         memoryGb: {description: "Memory allocated in GB"}
         diskGb: {description: "Disk size allocated in GB"}
+        preemptible: {description: "Number of preemptible attempts"}
         dockerImage: {description: "Docker image for running BWA"}
     }
 }
