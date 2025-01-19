@@ -60,7 +60,7 @@ task ExtractReadGroup {
     }
 
     runtime {
-        cpu: 1
+        cpu: 4
         memory: "160G"
         disk: "200G"
         preemptible: 0
