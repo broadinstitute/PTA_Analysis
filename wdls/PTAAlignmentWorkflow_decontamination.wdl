@@ -134,22 +134,14 @@ workflow SRFlowcell {
     File fq_e2 = select_first([DecontaminateSample.decontaminated_fq2, fq_end2, t_003_Bam2Fastq.fq_end2])
 
 # Declare the variable for the read group
-    String final_RG
-
-    # Conditional block to handle the read group
-    if (defined(fq_end1)) {
-        # Extract the read group if fq_end1 is defined
+    String final_RG = if (defined(fq_end1)) 
         call SRUTIL.ExtractReadGroup as extract_RG {
             input:
                 fastq = fq_end1,
                 sample_name = SM
-        }
-        # Assign the output to final_RG
-        final_RG = extract_RG.read_group
-    } else {
-        # Provide a default read group if fq_end1 is not defined
-        final_RG = "@RG\tID:defaultID\tPL:illumina\tLB:defaultLibrary\tSM:" + SM
-    }
+        }.read_group 
+    else 
+        "@RG\tID:defaultID\tPL:illumina\tLB:defaultLibrary\tSM:" + SM
 
     
     # Pass `final_RG` to downstream tasks

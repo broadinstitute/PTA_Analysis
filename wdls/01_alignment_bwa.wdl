@@ -1,27 +1,22 @@
 version 1.0
 
-workflow AlignAndIndexWorkflow {
+workflow SimplifiedAlignWorkflow {
     input {
         File read1                              # First-end FASTQ file
         File? read2                            # Second-end FASTQ file (optional)
         File referenceFasta                    # Reference genome FASTA file
         Array[File] bwaIndexFiles              # Array of BWA index files
         String outputPrefix                    # Output file prefix
-        String sample_name                     # Sample name for read group
-        String? readGroup                      # Read group string (optional)
+        String sampleName                      # Sample name for read group
+        String platform = "ILLUMINA"           # Sequencing platform
+        String libraryName                     # Library name
 
         # Resource settings as inputs
-        Int threads                             # Number of threads for BWA
-        Int memoryGb                            # Memory allocated in GB
-        Int diskGb                              # Disk size in GB
-        Int preemptible = 0                     # Number of preemptible attempts
-        String dockerImage                      # Docker image to use
-    }
-
-    call ExtractReadGroup {
-        input:
-            fastq = read1,
-            sample_name = sample_name
+        Int threads = 16                       # Number of threads for BWA
+        Int memoryGb = 64                      # Memory allocated in GB
+        Int diskGb = 200                       # Disk size in GB
+        Int preemptible = 0                    # Number of preemptible attempts
+        String dockerImage = "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"  # Docker image
     }
 
     call AlignReads {
@@ -29,9 +24,10 @@ workflow AlignAndIndexWorkflow {
             read1 = read1,
             read2 = read2,
             referenceFasta = referenceFasta,
-            bwaIndexFiles = bwaIndexFiles,
             outputPrefix = outputPrefix,
-            readGroup = ExtractReadGroup.read_group,
+            sampleName = sampleName,
+            platform = platform,
+            libraryName = libraryName,
             threads = threads,
             memoryGb = memoryGb,
             diskGb = diskGb,
@@ -45,37 +41,15 @@ workflow AlignAndIndexWorkflow {
     }
 }
 
-task ExtractReadGroup {
-    input {
-        File fastq
-        String sample_name
-    }
-
-    command <<<
-        zcat ~{fastq} | head -n 1 | sed 's/^@//' | awk -F':' '{printf "@RG\\tID:%s_%s\\tPL:illumina\\tLB:%s\\tSM:%s\\n", $1, $3, $NF, "~{sample_name}"}'
-    >>>
-
-    output {
-        String read_group = read_string(stdout())
-    }
-
-    runtime {
-        cpu: 4
-        memory: "160G"
-        disk: "200G"
-        preemptible: 0
-        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
-    }
-}
-
 task AlignReads {
     input {
         File read1
         File? read2
         File referenceFasta
-        Array[File] bwaIndexFiles
         String outputPrefix
-        String? readGroup
+        String sampleName
+        String platform
+        String libraryName
 
         # Resource settings
         Int threads
@@ -88,14 +62,20 @@ task AlignReads {
     command <<<
         set -euxo pipefail
         
+        # Align reads and create BAM file
         bwa mem \
+          -K 100000000 \
           -t ~{threads} \
-          ~{if defined(readGroup) then "-R '" + readGroup + "'" else ""} \
+          -Y \
+          -R '@RG\tID:~{sampleName}\tSM:~{sampleName}\tPL:~{platform}\tLB:~{libraryName}' \
+          -c 100 \
+          -M \
           ~{referenceFasta} \
           ~{read1} \
           ~{if defined(read2) then read2 else ""} \
-        | samtools sort -@~{threads} -m ~{memoryGb / threads}G -o ~{outputPrefix}.bam -
-
+        | samtools view -b -o ~{outputPrefix}.bam -
+        
+        # Index the BAM file
         samtools index ~{outputPrefix}.bam
     >>>
 
