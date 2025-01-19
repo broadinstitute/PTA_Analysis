@@ -17,12 +17,12 @@ workflow CreateBwaMem2IndexWorkflow {
     }
 
     output {
-        File amb = BwaMem2Index.amb
-        File ann = BwaMem2Index.ann
-        File bwt_64 = BwaMem2Index.bwt_64
-        File pac = BwaMem2Index.pac
-        File sa = BwaMem2Index.sa
-        File o123 = BwaMem2Index.o123
+        File? amb = BwaMem2Index.amb
+        File? ann = BwaMem2Index.ann
+        File? bwt_64 = BwaMem2Index.bwt_64
+        File? pac = BwaMem2Index.pac
+        File? sa = BwaMem2Index.sa
+        File? o123 = BwaMem2Index.o123
     }
 }
 
@@ -46,12 +46,12 @@ task BwaMem2Index {
     >>>
 
     output {
-        File amb = "~{basename(fasta)}.amb"
-        File ann = "~{basename(fasta)}.ann"
-        File bwt_64 = "~{basename(fasta)}.bwt.2bit.64"
-        File pac = "~{basename(fasta)}.pac"
-        File sa = "~{basename(fasta)}.sa"
-        File o123 = "~{basename(fasta)}.0123"
+        File? amb = "~{basename(fasta)}.amb"
+        File? ann = "~{basename(fasta)}.ann"
+        File? bwt_64 = "~{basename(fasta)}.bwt.2bit.64"
+        File? pac = "~{basename(fasta)}.pac"
+        File? sa = "~{basename(fasta)}.sa"
+        File? o123 = "~{basename(fasta)}.0123"
     }
 
     runtime {

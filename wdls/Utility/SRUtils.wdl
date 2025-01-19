@@ -220,7 +220,7 @@ task BwaMem2 {
             ~{fq_end1} \
             ~{fq_end2} | \
         samtools view -1 - > ~{prefix}.bam
-
+    >>>
 
         #bwa-mem2 mem \
         #    -K 100000000 \
@@ -234,7 +234,7 @@ task BwaMem2 {
         #    ~{fq_end1} \
         #    ~{fq_end2} | \
         #samtools view -1 - > ~{prefix}.bam
-    >>>
+    #>>>
 
     output {
         File bam = "~{prefix}.bam"

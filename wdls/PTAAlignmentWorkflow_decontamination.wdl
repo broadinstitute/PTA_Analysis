@@ -133,7 +133,8 @@ workflow SRFlowcell {
     File fq_e1 = select_first([DecontaminateSample.decontaminated_fq1, fq_end1, t_003_Bam2Fastq.fq_end1])
     File fq_e2 = select_first([DecontaminateSample.decontaminated_fq2, fq_end2, t_003_Bam2Fastq.fq_end2])
 
-    String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\tID:" + SM + "_" + LB + "\tPL:" + platform + "\tLB:" + LB + "\tSM:" + SM])
+    #String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\tID:" + SM + "_" + LB + "\tPL:" + platform + "\tLB:" + LB + "\tSM:" + SM])
+    String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\\tID:" + SM + "_" + LB + "\\tPL:" + platform + "\\tLB:" + LB + "\\tSM:" + SM])
 
     # Align reads to reference with BWA-MEM2: (slightly modified by Shadi)
     call SRUTIL.BwaMem2 as t_005_AlignReads {
