@@ -1,17 +1,15 @@
 version 1.0
 
-workflow SimplifiedAlignWorkflow {
+workflow AlignReadsWorkflow {
     input {
         File read1                              # First-end FASTQ file
         File? read2                            # Second-end FASTQ file (optional)
         File referenceFasta                    # Reference genome FASTA file
         Array[File] bwaIndexFiles              # Array of BWA index files
         String outputPrefix                    # Output file prefix
-        String sampleName                      # Sample name for read group
-        String platform = "ILLUMINA"           # Sequencing platform
-        String libraryName                     # Library name
+        String readGroup                       # Read group string
 
-        # Resource settings as inputs
+        # Resource settings
         Int threads = 16                       # Number of threads for BWA
         Int memoryGb = 64                      # Memory allocated in GB
         Int diskGb = 200                       # Disk size in GB
@@ -24,10 +22,9 @@ workflow SimplifiedAlignWorkflow {
             read1 = read1,
             read2 = read2,
             referenceFasta = referenceFasta,
+            bwaIndexFiles = bwaIndexFiles,
             outputPrefix = outputPrefix,
-            sampleName = sampleName,
-            platform = platform,
-            libraryName = libraryName,
+            readGroup = readGroup,
             threads = threads,
             memoryGb = memoryGb,
             diskGb = diskGb,
@@ -46,10 +43,9 @@ task AlignReads {
         File read1
         File? read2
         File referenceFasta
+        Array[File] bwaIndexFiles
         String outputPrefix
-        String sampleName
-        String platform
-        String libraryName
+        String readGroup                      # Input the read group string
 
         # Resource settings
         Int threads
@@ -61,20 +57,20 @@ task AlignReads {
 
     command <<<
         set -euxo pipefail
-        
+
         # Align reads and create BAM file
         bwa mem \
           -K 100000000 \
           -t ~{threads} \
           -Y \
-          -R '@RG\tID:~{sampleName}\tSM:~{sampleName}\tPL:~{platform}\tLB:~{libraryName}' \
+          -R '~{readGroup}' \
           -c 100 \
           -M \
           ~{referenceFasta} \
           ~{read1} \
           ~{if defined(read2) then read2 else ""} \
         | samtools view -b -o ~{outputPrefix}.bam -
-        
+
         # Index the BAM file
         samtools index ~{outputPrefix}.bam
     >>>
