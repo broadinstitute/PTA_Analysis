@@ -157,12 +157,27 @@ task ExtractReadGroup {
         String read_group = read_string(stdout())
     }
 
-    runtime {
-        cpu: 1
-        memory: "1G"
-        disk: "10G"
-        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"  # Specify the appropriate Docker image
+    #########################
+    RuntimeAttr default_attr = object {
+        cpu_cores:          4,
+        mem_gb:             32,
+        disk_gb:            100,
+        boot_disk_gb:       10,
+        preemptible_tries:  0,
+        max_retries:        1,
+        docker:             "us.gcr.io/broad-dsp-lrma/lr-utils:0.1.8"
     }
+    RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
+    runtime {
+        cpu:                    select_first([runtime_attr.cpu_cores,         default_attr.cpu_cores])
+        memory:                 select_first([runtime_attr.mem_gb,            default_attr.mem_gb]) + " GiB"
+        disks: "local-disk " +  select_first([runtime_attr.disk_gb,           default_attr.disk_gb]) + " HDD"
+        bootDiskSizeGb:         select_first([runtime_attr.boot_disk_gb,      default_attr.boot_disk_gb])
+        preemptible:            select_first([runtime_attr.preemptible_tries, default_attr.preemptible_tries])
+        maxRetries:             select_first([runtime_attr.max_retries,       default_attr.max_retries])
+        docker:                 select_first([runtime_attr.docker,            default_attr.docker])
+    }
+}
 }
 
 task BwaMem2 {

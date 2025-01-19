@@ -1,7 +1,6 @@
 version 1.0
 
 workflow AlignAndIndexWorkflow {
-
     input {
         File read1                              # First-end FASTQ file
         File? read2                            # Second-end FASTQ file (optional)
@@ -10,16 +9,18 @@ workflow AlignAndIndexWorkflow {
         String outputPrefix                    # Output file prefix
         String sample_name                     # Sample name for read group
         String? readGroup                      # Read group string (optional)
-        Int threads = 4                        # Number of threads for BWA
-        Int memoryGb = 16                      # Memory allocated in GB
-        Int diskGb = 100                       # Disk size in GB
-        String dockerImage = "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2" #"quay.io/biocontainers/bwa:0.7.17--hed695b0_7"  # Docker image
+
+        # Resource settings as inputs
+        Int threads                             # Number of threads for BWA
+        Int memoryGb                            # Memory allocated in GB
+        Int diskGb                              # Disk size in GB
+        String dockerImage                      # Docker image to use
     }
 
     call ExtractReadGroup {
         input:
             fastq = read1,
-            sample_name = sample_name  # Use the workflow input for sample name
+            sample_name = sample_name
     }
 
     call AlignReads {
@@ -29,7 +30,7 @@ workflow AlignAndIndexWorkflow {
             referenceFasta = referenceFasta,
             bwaIndexFiles = bwaIndexFiles,
             outputPrefix = outputPrefix,
-            readGroup = ExtractReadGroup.read_group,  # Pass the extracted read group
+            readGroup = ExtractReadGroup.read_group,
             threads = threads,
             memoryGb = memoryGb,
             diskGb = diskGb,
@@ -41,6 +42,7 @@ workflow AlignAndIndexWorkflow {
         File outputBai = AlignReads.outputBai
     }
 }
+
 task ExtractReadGroup {
     input {
         File fastq
@@ -59,7 +61,7 @@ task ExtractReadGroup {
         cpu: 1
         memory: "1G"
         disk: "10G"
-        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"  # Specify the appropriate Docker image
+        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
     }
 }
 
@@ -71,16 +73,17 @@ task AlignReads {
         Array[File] bwaIndexFiles
         String outputPrefix
         String? readGroup
-        Int threads = 4
-        Int memoryGb = 16
-        Int diskGb = 100
-        String dockerImage = "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2" #"quay.io/biocontainers/bwa:0.7.17--hed695b0_7"
+
+        # Resource settings
+        Int threads
+        Int memoryGb
+        Int diskGb
+        String dockerImage
     }
 
     command <<<
         set -euxo pipefail
         
-        # Run BWA and sort the BAM file
         bwa mem \
           -t ~{threads} \
           ~{if defined(readGroup) then "-R '" + readGroup + "'" else ""} \
@@ -89,7 +92,6 @@ task AlignReads {
           ~{if defined(read2) then read2 else ""} \
         | samtools sort -@~{threads} -m ~{memoryGb / threads}G -o ~{outputPrefix}.bam -
 
-        # Index the sorted BAM file
         samtools index ~{outputPrefix}.bam
     >>>
 
@@ -106,12 +108,6 @@ task AlignReads {
     }
 
     parameter_meta {
-        read1: {description: "First-end FASTQ file"}
-        read2: {description: "Second-end FASTQ file (optional)"}
-        referenceFasta: {description: "Reference genome FASTA file"}
-        bwaIndexFiles: {description: "Array of BWA index files"}
-        outputPrefix: {description: "Output file prefix"}
-        readGroup: {description: "Read group string (optional)"}
         threads: {description: "Number of threads for BWA"}
         memoryGb: {description: "Memory allocated in GB"}
         diskGb: {description: "Disk size allocated in GB"}
