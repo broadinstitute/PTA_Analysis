@@ -161,6 +161,7 @@ task ExtractReadGroup {
         cpu: 1
         memory: "1G"
         disk: "10G"
+        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"  # Specify the appropriate Docker image
     }
 }
 

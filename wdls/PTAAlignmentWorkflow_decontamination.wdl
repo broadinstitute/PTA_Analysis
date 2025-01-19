@@ -136,13 +136,22 @@ workflow SRFlowcell {
     #String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\tID:" + SM + "_" + LB + "\tPL:" + platform + "\tLB:" + LB + "\tSM:" + SM])
     #String RG = select_first([t_004_GetRawReadGroup.rg, "@RG\\tID:" + SM + "_" + LB + "\\tPL:" + platform + "\\tLB:" + LB + "\\tSM:" + SM])
     # Extract read group from FASTQ
-    call SRUTIL.ExtractReadGroup {
-        input:
-            fastq = fq_end1,
-            sample_name = SM
+    # Extract read group from FASTQ if `fq_end1` is defined
+    if (defined(fq_end1)) {
+        call SRUTIL.ExtractReadGroup as extract_RG {
+            input:
+                fastq = fq_end1,
+                sample_name = SM
+        }
     }
-    String RG = SRUTIL.ExtractReadGroup
 
+# Provide a fallback read group
+    String final_RG = select_first([
+        extract_RG.read_group,
+        "@RG\tID:defaultID\tPL:illumina\tLB:defaultLibrary\tSM:" + SM
+    ])
+
+# Pass `final_RG` to downstream tasks
     # Align reads to reference with BWA-MEM2: (slightly modified by Shadi)
     call SRUTIL.BwaMem2 as t_005_AlignReads {
         input:
@@ -157,7 +166,7 @@ workflow SRFlowcell {
             ref_bwt = ref_map["bwt"],
             ref_pac = ref_map["pac"],
             mark_short_splits_as_secondary = true,
-            read_group = RG,
+            read_group = final_RG,
             prefix = SM + ".aligned",
             bwa_options = bwa_options,
             cpu_cores = bwa_cpu,           # New optional input
