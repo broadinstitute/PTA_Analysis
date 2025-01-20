@@ -46,7 +46,8 @@ workflow SRFlowcell {
         File? fq_end2
 
         String SM
-        String LB
+        String readGroup
+        #String LB
 
         File ref_map_file
         String? contaminant_ref_name
@@ -119,7 +120,7 @@ workflow SRFlowcell {
                 fq_end2 = select_first([fq_end2, t_003_Bam2Fastq.fq_end2]),
 
                 SM = SM,
-                LB = LB,
+                #LB = LB,
                 platform = platform,
 
                 contaminant_ref_name = select_first([contaminant_ref_name]),
@@ -133,18 +134,7 @@ workflow SRFlowcell {
     File fq_e1 = select_first([DecontaminateSample.decontaminated_fq1, fq_end1, t_003_Bam2Fastq.fq_end1])
     File fq_e2 = select_first([DecontaminateSample.decontaminated_fq2, fq_end2, t_003_Bam2Fastq.fq_end2])
 
-# Declare the variable for the read group
-    String final_RG = if (defined(fq_end1)) 
-        call SRUTIL.ExtractReadGroup as extract_RG {
-            input:
-                fastq = fq_end1,
-                sample_name = SM
-        }.read_group 
-    else 
-        "@RG\tID:defaultID\tPL:illumina\tLB:defaultLibrary\tSM:" + SM
-
-    
-    # Pass `final_RG` to downstream tasks
+  # Pass `final_RG` to downstream tasks
     # Align reads to reference with BWA-MEM2: (slightly modified by Shadi)
     call SRUTIL.BwaMem2 as t_005_AlignReads {
         input:
@@ -159,7 +149,7 @@ workflow SRFlowcell {
             ref_bwt = ref_map["bwt"],
             ref_pac = ref_map["pac"],
             mark_short_splits_as_secondary = true,
-            read_group = final_RG,
+            read_group = readGroup,
             prefix = SM + ".aligned",
             bwa_options = bwa_options,
             cpu_cores = bwa_cpu,           # New optional input

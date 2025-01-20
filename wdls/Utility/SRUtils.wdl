@@ -237,6 +237,8 @@ task BwaMem2 {
             ~{fq_end1} \
             ~{fq_end2} | \
         samtools view -1 - > ~{prefix}.bam
+        # Index the BAM file
+        samtools index ~{prefix}.bam
     >>>
         #bwa mem \
         #    -K 100000000 \
@@ -254,6 +256,8 @@ task BwaMem2 {
 
     output {
         File bam = "~{prefix}.bam"
+        File bai = "~{prefix}.bam.bai"
+
     }
     #########################
     RuntimeAttr default_attr = object {
