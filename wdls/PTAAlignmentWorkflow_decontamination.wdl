@@ -108,14 +108,14 @@ workflow SRFlowcell {
 
   # Pass `final_RG` to downstream tasks
     # Align reads to reference with BWA-MEM2: (slightly modified by Shadi)
-    call SRUTIL.BwaMem2 as t_005_AlignReads {
+    call SRUTIL.BwaMem as t_005_AlignReads {
         input:
             fq_end1 = fq_e1,
             fq_end2 = fq_e2,
             ref_fasta = ref_map["fasta"],
             ref_fasta_index = ref_map["fai"],
             ref_dict = ref_map["dict"],
-            ref_0123 = ref_map["0123"],
+            #ref_0123 = ref_map["0123"],
             ref_amb = ref_map["amb"],
             ref_ann = ref_map["ann"],
             ref_bwt = ref_map["bwt"],
