@@ -19,8 +19,10 @@ workflow RemoveSingleOrganismContamination {
         File? fq_end2
 
         String SM
-        String LB
+        String? LB
         String platform = "illumina"
+        String readGroup
+
 
         String contaminant_ref_name
         File contaminant_ref_map_file
@@ -88,8 +90,9 @@ workflow RemoveSingleOrganismContamination {
 
     File fq_e1 = select_first([fq_end1, t_005_Bam2Fastq.fq_end1])
     File fq_e2 = select_first([fq_end2, t_005_Bam2Fastq.fq_end2])
+    String RG = readGroup
 
-    String RG = select_first([t_006_GetRawReadGroup.rg, "@RG\tID:" + SM + "_" + LB + "\tPL:" + platform + "\tLB:" + LB + "\tSM:" + SM])
+    #String RG = select_first([t_006_GetRawReadGroup.rg, "@RG\tID:" + SM + "_" + LB + "\tPL:" + platform + "\tLB:" + LB + "\tSM:" + SM])
 
     # Align data to contaminant reference:
     call SRUTIL.BwaMem2 as t_007_AlignReads {
