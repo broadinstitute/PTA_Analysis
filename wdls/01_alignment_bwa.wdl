@@ -17,7 +17,7 @@ workflow AlignReadsWorkflow {
         String dockerImage = "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"  # Docker image
     }
 
-    call AlignReads {
+    call AlignAndPrepareBam {
         input:
             read1 = read1,
             read2 = read2,
@@ -33,12 +33,12 @@ workflow AlignReadsWorkflow {
     }
 
     output {
-        File outputBam = AlignReads.outputBam
-        File outputBai = AlignReads.outputBai
+        File outputBam = AlignAndPrepareBam.outputBam
+        File outputBai = AlignAndPrepareBam.outputBai
     }
 }
 
-task AlignReads {
+task AlignAndPrepareBam {
     input {
         File read1
         File? read2
@@ -71,9 +71,16 @@ task AlignReads {
           ~{if defined(read2) then read2 else ""} \
         | samtools view -b -o ~{outputPrefix}.unsorted.bam -
 
+        # Queryname sort the BAM file
+        samtools sort -n -@ ~{threads} -m ~{memoryGb / threads}G \
+          -o ~{outputPrefix}.queryname_sorted.bam ~{outputPrefix}.unsorted.bam
+
+        # Fixmate to correct mate information
+        samtools fixmate -m ~{outputPrefix}.queryname_sorted.bam ~{outputPrefix}.fixed.bam
+
         # Sort BAM file by genomic coordinates
         samtools sort -@ ~{threads} -m ~{memoryGb / threads}G \
-          -o ~{outputPrefix}.bam ~{outputPrefix}.unsorted.bam
+          -o ~{outputPrefix}.bam ~{outputPrefix}.fixed.bam
 
         # Index the sorted BAM file
         samtools index ~{outputPrefix}.bam
@@ -97,6 +104,6 @@ task AlignReads {
         memoryGb: {description: "Memory allocated in GB"}
         diskGb: {description: "Disk size allocated in GB"}
         preemptible: {description: "Number of preemptible attempts"}
-        dockerImage: {description: "Docker image for running BWA"}
+        dockerImage: {description: "Docker image for running BWA and samtools"}
     }
 }
