@@ -58,7 +58,7 @@ task AlignReads {
     command <<<
         set -euxo pipefail
 
-        # Align reads and create BAM file
+        # Align reads and create unsorted BAM file
         bwa mem \
           -K 100000000 \
           -t ~{threads} \
@@ -69,9 +69,13 @@ task AlignReads {
           ~{referenceFasta} \
           ~{read1} \
           ~{if defined(read2) then read2 else ""} \
-        | samtools view -b -o ~{outputPrefix}.bam -
+        | samtools view -b -o ~{outputPrefix}.unsorted.bam -
 
-        # Index the BAM file
+        # Sort BAM file by genomic coordinates
+        samtools sort -@ ~{threads} -m ~{memoryGb / threads}G \
+          -o ~{outputPrefix}.bam ~{outputPrefix}.unsorted.bam
+
+        # Index the sorted BAM file
         samtools index ~{outputPrefix}.bam
     >>>
 
