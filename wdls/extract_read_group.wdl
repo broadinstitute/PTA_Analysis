@@ -30,6 +30,8 @@ workflow ExtractReadGroupWorkflow {
 
     output {
         String readGroup = ExtractReadGroup.read_group
+        # String library_name = "~{if defined(libraryName) then libraryName else $NF}" # Extract library name separately
+
     }
 }
 
@@ -54,6 +56,7 @@ task ExtractReadGroup {
 
     output {
         String read_group = read_string(stdout())
+       # String library_name = "~{if defined(libraryName) then libraryName else $NF}" # Extract library name separately
     }
 
     runtime {
