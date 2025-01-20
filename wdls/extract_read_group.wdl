@@ -36,20 +36,11 @@ workflow ExtractReadGroupWorkflow {
 task ExtractReadGroup {
     input {
         File fastq
-        String sampleName
-        String platform
-        String? libraryName
-
-        # Runtime attributes
-        Int cpu
-        Int memoryGb
-        Int diskGb
-        Int preemptible
-        String dockerImage
+        String sample_name
     }
 
     command <<<
-        zcat ~{fastq} | head -n 1 | sed 's/^@//' | awk -F':' '{printf "@RG\\tID:%s_%s\\tPL:~{platform}\\tSM:%s~{if defined(libraryName) then "\\tLB:" + libraryName else ""}\\n", $1, $3, "~{sampleName}"}'
+        zcat ~{fastq} | head -n 1 | awk -F':' '{printf "@RG\\tID:%s_%s\\tPL:illumina\\tLB:%s\\tSM:%s", $1, $3, $NF, "~{sample_name}"}'
     >>>
 
     output {
@@ -57,10 +48,9 @@ task ExtractReadGroup {
     }
 
     runtime {
-        cpu: cpu
-        memory: "~{memoryGb} GiB"
-        disks: "local-disk ~{diskGb} HDD"
-        preemptible: preemptible
-        docker: dockerImage
+        cpu: 1
+        memory: "4G"
+        disk: "10G"
+        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
     }
 }
