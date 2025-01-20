@@ -3,7 +3,7 @@ version 1.0
 workflow ExtractReadGroupWorkflow {
     input {
         File read1                              # First-end FASTQ file
-        String sampleName                      # Sample name for the read group
+        String sample_name                      # Sample name for the read group
         String platform = "ILLUMINA"           # Sequencing platform
         String? libraryName                    # Optional library name
 
@@ -18,7 +18,7 @@ workflow ExtractReadGroupWorkflow {
     call ExtractReadGroup {
         input:
             fastq = read1,
-            sampleName = sampleName,
+            sample_name = sample_name,
             platform = platform,
             libraryName = libraryName,
             cpu = cpu,
@@ -37,6 +37,15 @@ task ExtractReadGroup {
     input {
         File fastq
         String sample_name
+        String platform
+        String? libraryName
+
+        # Runtime attributes
+        Int cpu
+        Int memoryGb
+        Int diskGb
+        Int preemptible
+        String dockerImage
     }
 
     command <<<
@@ -48,9 +57,10 @@ task ExtractReadGroup {
     }
 
     runtime {
-        cpu: 1
-        memory: "4G"
-        disk: "10G"
-        docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
+        cpu: cpu
+        memory: "~{memoryGb} GiB"
+        disks: "local-disk ~{diskGb} HDD"
+        preemptible: preemptible
+        docker: dockerImage
     }
 }
