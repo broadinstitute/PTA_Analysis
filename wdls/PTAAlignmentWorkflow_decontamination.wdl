@@ -4,7 +4,6 @@ import "Utility/SRUtils.wdl" as SRUTIL
 import "Utility/Utils.wdl" as Utils
 import "QC/AlignedMetrics.wdl" as AM
 import "QC/FastQC.wdl" as FastQC
-import "Preprocessing/RemoveSingleOrganismContamination.wdl" as DECONTAMINATE
 import "Utility/Finalize.wdl" as FF
 
 workflow SRFlowcell {
@@ -47,7 +46,6 @@ workflow SRFlowcell {
 
         String SM
         String readGroup
-        #String LB
 
         File ref_map_file
         String? contaminant_ref_name
@@ -105,34 +103,8 @@ workflow SRFlowcell {
         call Utils.GetRawReadGroup as t_004_GetRawReadGroup { input: gcs_bam_path = select_first([bam]) }
     }
 
-    # OK, this is inefficient, but let's NOW extract our contaminated reads if we have the info.
-    # TODO: Move this into the sections above to make it more efficient.  Specifically where we convert bam -> fastq.
-    # TODO: Re-enable this section after decontamination is fixed.  The alignment based method with BWA-MEM doesn't work.  Not clear why, but this does seem somewhat inadequate (simplistic alignment-based strategies).
-    if (false && defined(contaminant_ref_map_file)) {
-
-        # Call our sub-workflow for decontamination:
-        # NOTE: We don't need to be too concerned with the finalization info.
-        #       This will be partially filled in by the WDL itself, so we can pass the same inputs for
-        #       these things here (e.g. `dir_prefix`):
-        call DECONTAMINATE.RemoveSingleOrganismContamination as DecontaminateSample {
-            input:
-                fq_end1 = select_first([fq_end1, t_003_Bam2Fastq.fq_end1]),
-                fq_end2 = select_first([fq_end2, t_003_Bam2Fastq.fq_end2]),
-
-                SM = SM,
-                #LB = LB,
-                platform = platform,
-
-                contaminant_ref_name = select_first([contaminant_ref_name]),
-                contaminant_ref_map_file = select_first([contaminant_ref_map_file]),
-
-                dir_prefix = dir_prefix,
-                gcs_out_root_dir = gcs_out_root_dir
-        }
-    }
-
-    File fq_e1 = select_first([DecontaminateSample.decontaminated_fq1, fq_end1, t_003_Bam2Fastq.fq_end1])
-    File fq_e2 = select_first([DecontaminateSample.decontaminated_fq2, fq_end2, t_003_Bam2Fastq.fq_end2])
+    File fq_e1 = select_first([fq_end1, t_003_Bam2Fastq.fq_end1])
+    File fq_e2 = select_first([fq_end2, t_003_Bam2Fastq.fq_end2])
 
   # Pass `final_RG` to downstream tasks
     # Align reads to reference with BWA-MEM2: (slightly modified by Shadi)
@@ -375,7 +347,7 @@ workflow SRFlowcell {
         if (defined(bam)) {
             File unaligned_bam_o = unaligned_reads_dir + "/" + basename(select_first([bam]))
             File unaligned_bai_o = unaligned_reads_dir + "/" + basename(select_first([bai]))
-            File fqboup = unaligned_reads_dir + "/" + basename(select_first([DecontaminateSample.decontaminated_unpaired, t_003_Bam2Fastq.fq_unpaired]))
+            File fqboup = unaligned_reads_dir + "/" + basename(select_first([t_003_Bam2Fastq.fq_unpaired]))
         }
     }
 
@@ -406,10 +378,6 @@ workflow SRFlowcell {
         # Aligned BAM file
         File aligned_bam = select_first([t_023_FinalizeAlignedBam.gcs_path, final_bam])
         File aligned_bai = select_first([t_024_FinalizeAlignedBai.gcs_path, final_bai])
-
-        # Contaminated BAM file:
-        # TODO: This will need to be fixed for optional finalization:
-        File? contaminated_bam = DecontaminateSample.contaminated_bam
 
         ##############################
         # Statistics:
