@@ -24,11 +24,11 @@ workflow SRFlowcell {
         LM: "Library name for the given bam file."
 
         ref_map_file:  "Reference map file for the primary reference sequence and auxillary file locations."
-        contaminant_ref_name:  "Name for the contaminant reference."
-        contaminant_ref_map_file:  "Reference map file for the contaminant reference sequence and auxillary file locations."
 
         dir_prefix: "Directory prefix to use for finalized location."
         gcs_out_root_dir:    "GCS Bucket into which to finalize outputs.  If no bucket is given, outputs will not be finalized and instead will remain in their native execution location."
+
+        runtime_attr_override: "Runtime attributes to override the default runtime attributes."
 
         perform_BQSR: "If true, will perform Base Quality Score Recalibration.  If false will not recalibrate base qualities."
 
@@ -48,8 +48,6 @@ workflow SRFlowcell {
         String readGroup
 
         File ref_map_file
-        String? contaminant_ref_name
-        File? contaminant_ref_map_file
 
         String dir_prefix
 
