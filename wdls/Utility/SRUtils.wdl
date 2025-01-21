@@ -164,12 +164,13 @@ task BwaMem {
         File fq_end2
 
         File ref_fasta
-        File ref_fasta_index
-        File ref_dict
-        File ref_amb
-        File ref_ann
-        File ref_bwt
-        File ref_pac
+        #File ref_fasta_index
+        #File ref_dict
+        #File ref_amb
+        #File ref_ann
+        #File ref_bwt
+        #File ref_pac
+        Array[File] bwaIndexFiles
 
         String? read_group
 
@@ -217,7 +218,7 @@ task BwaMem {
 
     #########################
     RuntimeAttr default_attr = object {
-        cpu_cores:          2,
+        cpu_cores:          4,
         mem_gb:             16,
         disk_gb:            default_disk_size,
         boot_disk_gb:       10,

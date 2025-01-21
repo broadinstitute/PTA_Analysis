@@ -48,6 +48,9 @@ workflow SRFlowcell {
         String readGroup
 
         File ref_map_file
+        File ref_fasta
+        Array[File] bwaIndexFiles
+
 
         String dir_prefix
 
@@ -110,14 +113,16 @@ workflow SRFlowcell {
         input:
             fq_end1 = fq_e1,
             fq_end2 = fq_e2,
-            ref_fasta = ref_map["fasta"],
-            ref_fasta_index = ref_map["fai"],
-            ref_dict = ref_map["dict"],
+            #ref_fasta = ref_map["fasta"],
+            ref_fasta = ref_fasta,
+            #ref_fasta_index = ref_map["fai"],
+            #ref_dict = ref_map["dict"],
             #ref_0123 = ref_map["0123"],
-            ref_amb = ref_map["amb"],
-            ref_ann = ref_map["ann"],
-            ref_bwt = ref_map["bwt"],
-            ref_pac = ref_map["pac"],
+            #ref_amb = ref_map["amb"],
+            #ref_ann = ref_map["ann"],
+            #ref_bwt = ref_map["bwt"],
+            #ref_pac = ref_map["pac"],
+            bwaIndexFiles = bwaIndexFiles,
             mark_short_splits_as_secondary = true,
             read_group = readGroup,
             prefix = SM + ".aligned",
