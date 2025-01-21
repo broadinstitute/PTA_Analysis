@@ -11,6 +11,7 @@ task bwa_mem2_alignment {
         String read_group
         Int memoryGb  # Memory in GB as an integer
         Int diskGb    # Disk size in GB as an integer
+        Int preemptible = 3  # Number of preemptible attempts (default to 3)
     }
 
     command {
@@ -35,6 +36,7 @@ task bwa_mem2_alignment {
         cpu: threads
         memory: "~{memoryGb} GiB"  # Convert memory to a proper runtime format
         disks: "local-disk ~{diskGb} HDD"  # Use the integer disk size
+        preemptible: preemptible  # Add preemptible attempts
         docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
     }
 }
@@ -50,6 +52,7 @@ workflow alignment_workflow {
         String read_group
         Int memoryGb = 16  # Memory in GB as an integer
         Int diskGb = 200   # Disk size in GB as an integer
+        Int preemptible = 3  # Number of preemptible attempts (default to 3)
     }
 
     call bwa_mem2_alignment {
@@ -62,7 +65,8 @@ workflow alignment_workflow {
             threads = threads,
             read_group = read_group,
             memoryGb = memoryGb,
-            diskGb = diskGb
+            diskGb = diskGb,
+            preemptible = preemptible  # Pass the preemptible parameter
     }
 
     output {
