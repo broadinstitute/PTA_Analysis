@@ -6,6 +6,7 @@ workflow alignment_workflow {
         File fastq2                              # Input FASTQ file 2
         File reference                           # Reference genome file
         String prefix                            # Prefix for output file
+        Array[File] bwaIndexes                   # BWA index files
         Int threads = 16                         # Number of threads (default: 16)
         String read_group                        # Read group string
 
@@ -27,7 +28,8 @@ workflow alignment_workflow {
             memoryGb = memoryGb,
             diskGb = diskGb,
             preemptible = preemptible,
-            dockerImage = dockerImage
+            dockerImage = dockerImage,
+            bwaIndexes = bwaIndexes
     }
 
     output {
@@ -43,6 +45,7 @@ task bwa_mem_alignment {
         String prefix                            # Prefix for output file
         Int threads                              # Number of threads to use
         String read_group                        # Read group string
+        Array[File] bwaIndexes                   # BWA index files
 
         # Resource settings
         Int memoryGb                             # Memory allocation in GB

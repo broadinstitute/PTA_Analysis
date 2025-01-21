@@ -5,7 +5,7 @@ workflow AlignReadsWorkflow {
         File read1                              # First-end FASTQ file
         File? read2                            # Second-end FASTQ file (optional)
         File referenceFasta                    # Reference genome FASTA file
-        Array[File] bwaIndexFiles              # Array of BWA index files
+        Array[File] bwaIndexes              # Array of BWA index files
         String outputPrefix                    # Output file prefix
         String readGroup                       # Read group string
 
@@ -22,7 +22,7 @@ workflow AlignReadsWorkflow {
             read1 = read1,
             read2 = read2,
             referenceFasta = referenceFasta,
-            bwaIndexFiles = bwaIndexFiles,
+            bwaIndexes = bwaIndexes,
             outputPrefix = outputPrefix,
             readGroup = readGroup,
             threads = threads,
@@ -58,7 +58,7 @@ task AlignReads {
         File read1
         File? read2
         File referenceFasta
-        Array[File] bwaIndexFiles
+        Array[File] bwaIndexes              # Array of BWA index files
         String outputPrefix
         String readGroup                      # Input the read group string
 

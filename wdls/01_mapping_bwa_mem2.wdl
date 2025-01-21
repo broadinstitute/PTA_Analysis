@@ -4,7 +4,7 @@ task bwa_mem2_alignment {
     input {
         String fastq1
         String fastq2
-        Array[File] bwaIndexFiles  # BWA index files
+        Array[File] bwaIndexes  # BWA index files
         String reference
         String prefix
         Int threads
@@ -45,7 +45,7 @@ workflow alignment_workflow {
     input {
         String fastq1
         String fastq2
-        Array[File] bwaIndexFiles  # Input the BWA index files
+        Array[File] bwaIndexes              # Array of BWA index files
         String reference
         String prefix
         Int threads = 16
@@ -59,7 +59,7 @@ workflow alignment_workflow {
         input:
             fastq1 = fastq1,
             fastq2 = fastq2,
-            bwaIndexFiles = bwaIndexFiles,  # Pass the index files to the task
+            bwaIndexes = bwaIndexes,  # Pass the index files to the task
             reference = reference,
             prefix = prefix,
             threads = threads,
