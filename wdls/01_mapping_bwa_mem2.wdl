@@ -9,8 +9,8 @@ task bwa_mem2_alignment {
         String prefix
         Int threads
         String read_group
-        String memory
-        String disk
+        Int memoryGb  # Memory in GB as an integer
+        Int diskGb    # Disk size in GB as an integer
     }
 
     command {
@@ -33,8 +33,8 @@ task bwa_mem2_alignment {
 
     runtime {
         cpu: threads
-        memory: memory
-        disks: "local-disk ~{disk}" #HDD or SSD
+        memory: "~{memoryGb} GiB"  # Convert memory to a proper runtime format
+        disks: "local-disk ~{diskGb} HDD"  # Use the integer disk size
         docker: "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"
     }
 }
@@ -48,8 +48,8 @@ workflow alignment_workflow {
         String prefix
         Int threads = 16
         String read_group
-        String memory = "16 GB"
-        String disk = "200 GB"
+        Int memoryGb = 16  # Memory in GB as an integer
+        Int diskGb = 200   # Disk size in GB as an integer
     }
 
     call bwa_mem2_alignment {
@@ -61,8 +61,8 @@ workflow alignment_workflow {
             prefix = prefix,
             threads = threads,
             read_group = read_group,
-            memory = memory,
-            disk = disk
+            memoryGb = memoryGb,
+            diskGb = diskGb
     }
 
     output {
