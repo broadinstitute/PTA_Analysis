@@ -63,7 +63,7 @@ task AlignReads {
           -t ~{threads} \
           -Y \
           -R '~{readGroup}' \
-          -c 100 \
+          -c 10 \
           -M \
           ~{referenceFasta} \
           ~{read1} \
