@@ -3,27 +3,25 @@ version 1.0
 workflow MarkDuplicatesWorkflow {
   input {
     File input_bam
-    String output_bam_basename
+    String sample_name
     String metrics_filename
     Int preemptible_tries = 1
     Int memory_gb = 8
     Int disk_gb = 50
     Int cpu = 4
-    String docker = "us.gcr.io/broad-gotc-prod/picard-cloud:2.26.10"
-    File reference_fasta  # Add reference genome input
+    String docker = "us.gcr.io/broad-dsp-gatk/gatk:4.4.0.0"
   }
 
   call MarkDuplicates {
     input:
       input_bam = input_bam,
-      output_bam_basename = output_bam_basename,
+      sample_name = sample_name,
       metrics_filename = metrics_filename,
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
       disk_gb = disk_gb,
       cpu = cpu,
-      docker = docker,
-      reference_fasta = reference_fasta  # Pass reference to task
+      docker = docker
   }
 
   output {
@@ -36,23 +34,23 @@ workflow MarkDuplicatesWorkflow {
 task MarkDuplicates {
   input {
     File input_bam
-    String output_bam_basename
+    String sample_name
     String metrics_filename
     Int preemptible_tries
     Int memory_gb
     Int disk_gb
     Int cpu
     String docker
-    File reference_fasta  # Add reference genome
   }
 
   command {
-    java -Xmx~{memory_gb}G -jar /usr/picard/picard.jar MarkDuplicates \
-      INPUT=~{input_bam} \
-      OUTPUT=~{output_bam_basename}.bam \
-      METRICS_FILE=~{metrics_filename} \
-      CREATE_INDEX=true \
-      REFERENCE_SEQUENCE=~{reference_fasta}  # Pass reference genome
+    set -euxo pipefail
+
+    gatk MarkDuplicates \
+      -I ~{input_bam} \
+      -O ~{sample_name}.bam \
+      -M ~{metrics_filename} \
+      --CREATE_INDEX true
   }
 
   runtime {
@@ -64,9 +62,17 @@ task MarkDuplicates {
   }
 
   output {
-    File output_bam = "~{output_bam_basename}.bam"
-    File output_bam_index = "~{output_bam_basename}.bam.bai"
+    File output_bam = "~{sample_name}.bam"
+    File output_bam_index = "~{sample_name}.bam.bai"
     File duplicate_metrics = "~{metrics_filename}"
   }
 }
 
+#  command {
+#    java -Xmx~{memory_gb}G -jar /usr/picard/picard.jar MarkDuplicates \
+#      INPUT=~{input_bam} \
+#      OUTPUT=~{output_bam_basename}.bam \
+#      METRICS_FILE=~{metrics_filename} \
+#      CREATE_INDEX=true \
+#      REFERENCE_SEQUENCE=~{reference_fasta}  # Pass reference genome
+#  }

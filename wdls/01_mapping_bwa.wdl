@@ -1,82 +1,83 @@
 version 1.0
 
-workflow alignment_workflow {
+workflow AlignReadsWorkflow {
     input {
-        File fastq1                              # Input FASTQ file 1
-        File fastq2                              # Input FASTQ file 2
-        File reference                           # Reference genome file
-        String prefix                            # Prefix for output file
-        Array[File] bwaIndexes                   # BWA index files
-        Int threads = 16                         # Number of threads (default: 16)
-        String read_group                        # Read group string
+        File read1                              # First-end FASTQ file
+        File? read2                            # Second-end FASTQ file (optional)
+        File referenceFasta                    # Reference genome FASTA file
+        Array[File] bwaIndexes              # Array of BWA index files
+        String outputPrefix                    # Output file prefix
+        String readGroup                       # Read group string
 
         # Resource settings
-        Int memoryGb = 16                        # Memory allocation in GB (default: 16 GB)
-        Int diskGb = 200                         # Disk allocation in GB (default: 200 GB)
-        Int preemptible = 3                      # Number of preemptible attempts
+        Int threads = 16                       # Number of threads for BWA
+        Int memoryGb = 64                      # Memory allocated in GB
+        Int diskGb = 200                       # Disk size in GB
+        Int preemptible = 3                    # Number of preemptible attempts
         String dockerImage = "us.gcr.io/broad-dsp-lrma/sr-utils:0.2.2"  # Docker image
     }
 
-    call bwa_mem_alignment {
+    call AlignReads {
         input:
-            fastq1 = fastq1,
-            fastq2 = fastq2,
-            reference = reference,
-            prefix = prefix,
+            read1 = read1,
+            read2 = read2,
+            referenceFasta = referenceFasta,
+            bwaIndexes = bwaIndexes,
+            outputPrefix = outputPrefix,
+            readGroup = readGroup,
             threads = threads,
-            read_group = read_group,
             memoryGb = memoryGb,
             diskGb = diskGb,
             preemptible = preemptible,
-            dockerImage = dockerImage,
-            bwaIndexes = bwaIndexes
+            dockerImage = dockerImage
     }
 
     output {
-        File bam = bwa_mem_alignment.bam
+        File unsortedBam = AlignReads.outputUnsortedBam
     }
 }
 
-task bwa_mem_alignment {
+task AlignReads {
     input {
-        File fastq1                              # Input FASTQ file 1
-        File fastq2                              # Input FASTQ file 2
-        File reference                           # Reference genome file
-        String prefix                            # Prefix for output file
-        Int threads                              # Number of threads to use
-        String read_group                        # Read group string
-        Array[File] bwaIndexes                   # BWA index files
+        File read1
+        File? read2
+        File referenceFasta
+        Array[File] bwaIndexes              # Array of BWA index files
+        String outputPrefix
+        String readGroup                      # Input the read group string
 
         # Resource settings
-        Int memoryGb                             # Memory allocation in GB
-        Int diskGb                               # Disk allocation in GB
-        Int preemptible                          # Number of preemptible attempts
-        String dockerImage                       # Docker image
+        Int threads
+        Int memoryGb
+        Int diskGb
+        Int preemptible
+        String dockerImage
     }
 
     command <<<
         set -euxo pipefail
 
-        echo "Running bwa mem..."
+        # Align reads and create unsorted BAM file
         bwa mem \
-            -K 100000000 \
-            -t ~{threads} \
-            -Y \
-            -R "~{read_group}" \
-            -c 100 \
-            -M \
-            ~{reference} \
-            ~{fastq1} ~{fastq2} | \
-            samtools view -b -o ~{prefix}_unsorted.bam -
+          -K 100000000 \
+          -t ~{threads} \
+          -Y \
+          -R '~{readGroup}' \
+          -c 100 \
+          -M \
+          ~{referenceFasta} \
+          ~{read1} \
+          ~{if defined(read2) then read2 else ""} \
+        | samtools view -b -o ~{outputPrefix}.unsorted.bam -
     >>>
 
     output {
-        File bam = "~{prefix}_unsorted.bam"
+        File outputUnsortedBam = "~{outputPrefix}.unsorted.bam"
     }
 
     runtime {
         cpu: threads
-        memory: "~{memoryGb} GiB"   # Convert memory to the appropriate format
+        memory: "~{memoryGb} GiB"
         disks: "local-disk ~{diskGb} HDD"
         preemptible: preemptible
         docker: dockerImage
