@@ -9,7 +9,7 @@ workflow MarkDuplicatesWorkflow {
     Int memory_gb = 8
     Int disk_gb = 50
     Int cpu = 4
-    String docker = "us.gcr.io/broad-dsp-gatk/gatk:4.4.0.0"
+    String docker = "broadinstitute/gatk:4.6.1.0"
   }
 
   call MarkDuplicates {
