@@ -53,7 +53,7 @@ workflow MarkDuplicatesWorkflow {
     String tagging_policy = "All" #"DontTag"    # Options: DontTag, OpticalOnly, All
     Boolean remove_duplicates = false   # Remove duplicates entirely
     Boolean create_index = true         # Create index for the output BAM
-    Int optical_duplicate_pixel_distance = 100  # Default for unpatterned flow cells
+    Int optical_duplicate_pixel_distance = 2500 #100  # Default for unpatterned flow cells
     Int max_file_handles = 8000         # File handles for read ends map
     Int max_optical_duplicate_set_size = 300000 # Optical duplicate set size
     Int max_records_in_ram = 500000     # Records stored in RAM before spilling to disk
@@ -106,7 +106,6 @@ task MarkDuplicates {
     Int max_file_handles
     Int max_optical_duplicate_set_size
     Int max_records_in_ram
-  #  Float sorting_collection_size_ratio
   }
 
   command {
