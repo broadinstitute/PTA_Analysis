@@ -1,6 +1,29 @@
 version 1.0
 
+# Workflow: BaseQualityScoreRecalibration
+# Author: Shadi Zaheri
+# Date: 2025-01-26
+# Description: Performs Base Quality Score Recalibration (BQSR) on WGS data using GATK BaseRecalibrator and ApplyBQSR. 
+# The input BAM should be the output from MarkDuplicates, and the workflow assumes known variant databases are available.
+
 workflow BaseQualityScoreRecalibration {
+  parameter_meta {
+    input_bam: "Path to the input BAM file. Must be the output BAM from MarkDuplicates."
+    input_bam_index: "Path to the index file for the input BAM."
+    reference_fasta: "Path to the reference genome in FASTA format."
+    reference_fasta_index: "Path to the index file for the reference FASTA."
+    reference_dict: "Path to the sequence dictionary for the reference FASTA."
+    known_sites: "Array of known variant sites for recalibration (e.g., dbSNP, Mills, 1000G)."
+    recalibration_report_filename: "Filename for the recalibration report (default includes sample name)."
+    sample_name: "Unique sample name used to name output files."
+    output_bam_basename: "Base name for the recalibrated BAM output (default includes sample name)."
+    preemptible_tries: "Number of preemptible retries allowed for each task."
+    memory_gb: "Memory allocated for each task in gigabytes."
+    disk_gb: "Disk space allocated for each task in gigabytes."
+    cpu: "Number of CPU cores allocated for each task."
+    gatk_docker: "Docker image for GATK tools (default: broadinstitute/gatk:4.6.1.0)."
+  }
+
   input {
     File input_bam
     File input_bam_index
@@ -8,13 +31,14 @@ workflow BaseQualityScoreRecalibration {
     File reference_fasta_index
     File reference_dict
     Array[File] known_sites
-    String recalibration_report_filename
-    String output_bam_basename
+    String sample_name
+    String recalibration_report_filename = "~{sample_name}_recal_data.table"
+    String output_bam_basename = "~{sample_name}_recalibrated"
     Int preemptible_tries = 1
-    Int memory_gb = 8
-    Int disk_gb = 50
+    Int memory_gb = 16
+    Int disk_gb = 200
     Int cpu = 4
-    String gatk_docker = "us.gcr.io/broad-gatk/gatk:4.3.0.0"
+    String gatk_docker = "broadinstitute/gatk:4.6.1.0"
   }
 
   call BaseRecalibrator {
@@ -54,7 +78,7 @@ workflow BaseQualityScoreRecalibration {
   }
 }
 
-### Task for BaseRecalibrator
+# Task: BaseRecalibrator
 task BaseRecalibrator {
   input {
     File input_bam
@@ -72,6 +96,8 @@ task BaseRecalibrator {
   }
 
   command {
+    set -euxo pipefail
+
     gatk --java-options "-Xmx~{memory_gb}G" BaseRecalibrator \
       -R ~{reference_fasta} \
       -I ~{input_bam} \
@@ -92,7 +118,7 @@ task BaseRecalibrator {
   }
 }
 
-### Task for ApplyBQSR
+# Task: ApplyBQSR
 task ApplyBQSR {
   input {
     File input_bam
@@ -109,6 +135,8 @@ task ApplyBQSR {
   }
 
   command {
+    set -euxo pipefail
+
     gatk --java-options "-Xmx~{memory_gb}G" ApplyBQSR \
       -R ~{reference_fasta} \
       -I ~{input_bam} \
