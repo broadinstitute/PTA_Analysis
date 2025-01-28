@@ -13,7 +13,8 @@ workflow BaseQualityScoreRecalibration {
     reference_fasta: "Path to the reference genome in FASTA format."
     reference_fasta_index: "Path to the index file for the reference FASTA."
     reference_dict: "Path to the sequence dictionary for the reference FASTA."
-    known_sites: "Array of known variant sites for recalibration (e.g., dbSNP, Mills, 1000G)."
+    known_sites_vcf: "Array of known variant sites for recalibration (e.g., dbSNP, Mills, 1000G)."
+    known_sites_index: "Array of index files (.tbi) for the known variant sites VCFs."
     recalibration_report_filename: "Filename for the recalibration report (default includes sample name)."
     sample_name: "Unique sample name used to name output files."
     output_bam_basename: "Base name for the recalibrated BAM output (default includes sample name)."
@@ -30,7 +31,8 @@ workflow BaseQualityScoreRecalibration {
     File reference_fasta
     File reference_fasta_index
     File reference_dict
-    Array[File] known_sites
+    Array[File] known_sites_vcf
+    Array[File] known_sites_index
     String sample_name
     String recalibration_report_filename = "~{sample_name}_recal_data.table"
     String output_bam_basename = "~{sample_name}_recalibrated"
@@ -48,7 +50,8 @@ workflow BaseQualityScoreRecalibration {
       reference_fasta = reference_fasta,
       reference_fasta_index = reference_fasta_index,
       reference_dict = reference_dict,
-      known_sites = known_sites,
+      known_sites_vcf = known_sites_vcf,
+      known_sites_index = known_sites_index,
       recalibration_report_filename = recalibration_report_filename,
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
@@ -79,7 +82,7 @@ workflow BaseQualityScoreRecalibration {
   }
 }
 
-# Task: BaseRecalibrator
+
 task BaseRecalibrator {
   input {
     File input_bam
@@ -87,7 +90,8 @@ task BaseRecalibrator {
     File reference_fasta
     File reference_fasta_index
     File reference_dict
-    Array[File] known_sites
+    Array[File] known_sites_vcf
+    Array[File] known_sites_index
     String recalibration_report_filename
     Int preemptible_tries
     Int memory_gb
@@ -99,10 +103,11 @@ task BaseRecalibrator {
   command {
     set -euxo pipefail
 
+    # Flatten known-sites into paired arguments
     gatk --java-options "-Xmx~{memory_gb}G" BaseRecalibrator \
       -R ~{reference_fasta} \
       -I ~{input_bam} \
-      --known-sites ~{sep=" --known-sites " known_sites} \
+      ~{sep=" " prefix("--known-sites ", known_sites_vcf)} \
       -O ~{recalibration_report_filename}
   }
 
@@ -116,6 +121,10 @@ task BaseRecalibrator {
 
   output {
     File recalibration_report = recalibration_report_filename
+  }
+
+  meta {
+    description: "Runs GATK BaseRecalibrator on the input BAM file, using known sites for recalibration."
   }
 }
 
