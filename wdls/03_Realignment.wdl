@@ -75,6 +75,7 @@ workflow BaseQualityScoreRecalibration {
   output {
     File recalibrated_bam = ApplyBQSR.recalibrated_bam
     File recalibrated_bam_index = ApplyBQSR.recalibrated_bam_index
+    File recalibration_report = BaseRecalibrator.recalibration_report
   }
 }
 
