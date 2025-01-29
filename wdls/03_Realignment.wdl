@@ -151,8 +151,6 @@ task ApplyBQSR {
 
     gatk --java-options "-Xmx~{memory_gb}G" ApplyBQSR \
       -R ~{reference_fasta} \
-      --reference-index ~{reference_fasta_index} \
-      --reference-dict ~{reference_dict} \
       -I ~{input_bam} \
       --bqsr-recal-file ~{recalibration_report} \
       -O ~{output_bam_basename}.bam
