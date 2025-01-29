@@ -66,6 +66,7 @@ workflow BaseQualityScoreRecalibration {
       input_bam_index = input_bam_index,
       reference_fasta = reference_fasta,
       reference_fasta_index = reference_fasta_index,
+      reference_dict = reference_dict,
       recalibration_report = BaseRecalibrator.recalibration_report,
       output_bam_basename = output_bam_basename,
       preemptible_tries = preemptible_tries,
@@ -135,6 +136,7 @@ task ApplyBQSR {
     File input_bam_index
     File reference_fasta
     File reference_fasta_index
+    File reference_dict
     File recalibration_report
     String output_bam_basename
     Int preemptible_tries
@@ -149,6 +151,8 @@ task ApplyBQSR {
 
     gatk --java-options "-Xmx~{memory_gb}G" ApplyBQSR \
       -R ~{reference_fasta} \
+      --reference-index ~{reference_fasta_index} \
+      --reference-dict ~{reference_dict} \
       -I ~{input_bam} \
       --bqsr-recal-file ~{recalibration_report} \
       -O ~{output_bam_basename}.bam
