@@ -154,6 +154,7 @@ task ApplyBQSR {
       -I ~{input_bam} \
       --bqsr-recal-file ~{recalibration_report} \
       -O ~{output_bam_basename}.bam
+    samtools index ~{output_bam_basename}.bam
   }
 
   runtime {
