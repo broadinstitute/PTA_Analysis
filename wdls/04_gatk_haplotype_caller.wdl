@@ -2,20 +2,19 @@ version 1.0
 
 # Workflow: VariantCalling
 # Author: Shadi Zaheri
-# Date: 2025-01-29
-# License: Broad Institute Inc.
-# Description: This workflow performs single-sample variant calling on whole genome sequencing (WGS) data using GATK HaplotypeCaller, 
-# following the settings from the reference paper.
+# Date: 2025-01-26
+# Description: This workflow performs single-sample variant calling on whole genome sequencing (WGS) data 
+# using GATK HaplotypeCaller, following the settings from the reference paper.
 # The input BAM should be the output from Realignment, and the workflow assumes known variant databases are available.
 
 workflow VariantCalling {
-  
   parameter_meta {
     reference_fasta: "Path to the reference genome in FASTA format."
     reference_fasta_index: "Path to the index file for the reference FASTA."
     input_bam: "Path to the input BAM file."
     input_bam_index: "Path to the index file for the input BAM."
-    sample_name: "Unique sample identifier. Used for naming the output VCF file."
+    output_vcf_basename: "Base name for the output VCF file (compressed)."
+    interval_list: "Optional: Path to an interval list file (e.g., BED or Picard format) for targeted variant calling."
     preemptible_tries: "Number of preemptible retries allowed for each task."
     memory_gb: "Memory allocated for each task in gigabytes."
     disk_gb: "Disk space allocated for each task in gigabytes."
@@ -28,16 +27,14 @@ workflow VariantCalling {
     File reference_fasta_index
     File input_bam
     File input_bam_index
-    String sample_name  # Input sample name, used for naming outputs
+    String output_vcf_basename
+    File? interval_list  # Optional input
     Int preemptible_tries = 1
     Int memory_gb = 32  # Increased for large WGS datasets
     Int disk_gb = 200  # Increased to handle large files
     Int cpu = 4
     String gatk_docker = "broadinstitute/gatk:4.6.1.0"  # Matching the paper
   }
-
-  # Define output VCF name based on sample_name
-  String output_vcf_basename = "~{sample_name}_variants"
 
   call HaplotypeCaller {
     input:
@@ -46,6 +43,7 @@ workflow VariantCalling {
       input_bam = input_bam,
       input_bam_index = input_bam_index,
       output_vcf_basename = output_vcf_basename,
+      interval_list = interval_list,  # Optional interval list
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
       disk_gb = disk_gb,
@@ -61,13 +59,13 @@ workflow VariantCalling {
 
 ### **Task for HaplotypeCaller**
 task HaplotypeCaller {
-  
   parameter_meta {
     reference_fasta: "Path to the reference genome in FASTA format."
     reference_fasta_index: "Path to the index file for the reference FASTA."
     input_bam: "Path to the input BAM file."
     input_bam_index: "Path to the index file for the input BAM."
-    output_vcf_basename: "Base name for the output VCF file (compressed), derived from sample name."
+    output_vcf_basename: "Base name for the output VCF file (compressed)."
+    interval_list: "Optional: Path to an interval list file (e.g., BED or Picard format) for targeted variant calling."
     preemptible_tries: "Number of preemptible retries allowed for each task."
     memory_gb: "Memory allocated for each task in gigabytes."
     disk_gb: "Disk space allocated for each task in gigabytes."
@@ -81,6 +79,7 @@ task HaplotypeCaller {
     File input_bam
     File input_bam_index
     String output_vcf_basename
+    File? interval_list  # Optional input
     Int preemptible_tries
     Int memory_gb
     Int disk_gb
@@ -92,8 +91,9 @@ task HaplotypeCaller {
     gatk --java-options "-Xmx~{memory_gb}G" HaplotypeCaller \
       -R ~{reference_fasta} \
       -I ~{input_bam} \
-      -O ~{output_vcf_basename}.vcf.gz \  # Compressed VCF output
-      --emit-ref-confidence ALL_CONFIDENT_SITES  # Matches the paper
+      -O ~{output_vcf_basename}.vcf.gz \
+      --emit-ref-confidence GVCF \
+      ~{if defined(interval_list) then "-L " + interval_list else ""}
   }
 
   runtime {
