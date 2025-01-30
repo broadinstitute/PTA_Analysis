@@ -11,6 +11,7 @@ workflow VariantCalling {
   parameter_meta {
     reference_fasta: "Path to the reference genome in FASTA format."
     reference_fasta_index: "Path to the index file for the reference FASTA."
+    reference_dict: "Path to the sequence dictionary for the reference FASTA."
     input_bam: "Path to the input BAM file."
     input_bam_index: "Path to the index file for the input BAM."
     output_vcf_basename: "Base name for the output VCF file (compressed)."
@@ -25,6 +26,7 @@ workflow VariantCalling {
   input {
     File reference_fasta
     File reference_fasta_index
+    File reference_dict  # Dictionary file (.dict)
     File input_bam
     File input_bam_index
     String output_vcf_basename
@@ -40,6 +42,7 @@ workflow VariantCalling {
     input:
       reference_fasta = reference_fasta,
       reference_fasta_index = reference_fasta_index,
+      reference_dict = reference_dict,
       input_bam = input_bam,
       input_bam_index = input_bam_index,
       output_vcf_basename = output_vcf_basename,
@@ -62,6 +65,7 @@ task HaplotypeCaller {
   parameter_meta {
     reference_fasta: "Path to the reference genome in FASTA format."
     reference_fasta_index: "Path to the index file for the reference FASTA."
+    reference_dict: "Path to the sequence dictionary for the reference FASTA."
     input_bam: "Path to the input BAM file."
     input_bam_index: "Path to the index file for the input BAM."
     output_vcf_basename: "Base name for the output VCF file (compressed)."
@@ -78,6 +82,7 @@ task HaplotypeCaller {
     File reference_fasta_index
     File input_bam
     File input_bam_index
+    File reference_dict  
     String output_vcf_basename
     File? interval_list  # Optional input
     Int preemptible_tries
