@@ -17,7 +17,7 @@ workflow CollectWGSMetricsWorkflow {
     Int cpu = 2
     String memory = "8G"
     String disk_size = "50G"
-    Boolean preemptible = true
+    Int preemptible_tries = 3  # Default: 3 retries on preemptible instances
   }
 
   parameter_meta {
@@ -31,7 +31,7 @@ workflow CollectWGSMetricsWorkflow {
     cpu: "Number of CPU cores allocated for the task."
     memory: "Memory allocated for the task."
     disk_size: "Disk size allocated for the task."
-    preemptible: "Whether to use preemptible instances to reduce cost."
+    preemptible_tries: "Number of preemptible retries allowed for each task."
   }
 
   call CollectWGSMetricsTask {
@@ -46,14 +46,13 @@ workflow CollectWGSMetricsWorkflow {
       cpu = cpu,
       memory = memory,
       disk_size = disk_size,
-      preemptible = preemptible
+      preemptible_tries = preemptible_tries
   }
 
   output {
     File wgs_metrics = CollectWGSMetricsTask.wgs_metrics
   }
 }
-
 
 task CollectWGSMetricsTask {
   input {
@@ -69,7 +68,7 @@ task CollectWGSMetricsTask {
     Int cpu
     String memory
     String disk_size
-    Boolean preemptible
+    Int preemptible_tries
   }
 
   command {
@@ -85,10 +84,10 @@ task CollectWGSMetricsTask {
   }
 
   runtime {
-    docker: "broadinstitute/gatk:latest"
+    docker: "broadinstitute/gatk:4.6.1.0"#"broadinstitute/gatk:latest"
     cpu: cpu
     memory: memory
     disks: "local-disk ~{disk_size} HDD"
-    preemptible: preemptible
+    preemptible_tries: preemptible_tries  # No conversion needed!
   }
 }
