@@ -37,7 +37,7 @@ task CollectWGSMetrics {
   }
 
   runtime {
-    docker: "library://sawibo/default/bioinf-tools:gatk4.1.3.0"
+    docker: "broadinstitute/gatk:4.6.1.0"
     cpu: cpu
     memory: "~{mem_gb}GB"
     disk: disk
