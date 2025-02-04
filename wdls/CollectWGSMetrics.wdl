@@ -1,65 +1,155 @@
 version 1.0
 
-# Summary:
-# This workflow runs GATK CollectWgsMetrics to compute whole-genome sequencing metrics on a given BAM file.
-# It outputs a metrics file containing coverage statistics and other quality metrics.
+task CollectWGSMetrics {
+  input {
+    # Sample input: a sample id and its BAM file.
+    String sample_id
+    File bam
 
-workflow CollectWGSMetricsWorkflow {
+    # Reference inputs for Terra.
+    File ref_fasta
+    File ref_index
+    File ref_dict
+
+    # Additional command-line options (if any) to pass to GATK.
+    String optional = ""
+
+    # Runtime resource parameters.
+    Int cpu = 1
+    # "mem_gb" is used both for the runtime memory (in GB) and for computing Java’s -Xmx value.
+    Int mem_gb = 8
+    String disk = "local-disk 50 HDD"
+    Int preemptible = 0
+  }
+
+  command <<<
+    gatk --java-options "-Xmx~{mem_gb - 4}g -Djava.io.tmpdir=$TMPDIR" CollectWgsMetrics \
+      -I ~{bam} \
+      -O ~{sample_id}.wgs_metrics.txt \
+      -R ~{ref_fasta} \
+      ~{optional}
     
-    input {
-        String sample_id
-        File bam
-        File genome_fasta
-        String optional_parameters
-        Int memory_gb
+    sed -i 's/picard\\.analysis\\.WgsMetrics/picard\\.analysis\\.CollectWGSMetrics\\\$WgsMetrics/' ~{sample_id}.wgs_metrics.txt
+  >>>
+
+  output {
+    File wgs_metrics = "~{sample_id}.wgs_metrics.txt"
+  }
+
+  runtime {
+    docker: "library://sawibo/default/bioinf-tools:gatk4.1.3.0"
+    cpu: cpu
+    memory: "~{mem_gb}GB"
+    disk: disk
+    preemptible: preemptible
+  }
+
+  meta {
+    description: "Task to run GATK CollectWGSMetrics on a BAM file using Terra reference inputs."
+  }
+
+  parameter_meta {
+    sample_id: {
+      description: "Unique identifier for the sample, used to name the output file."
     }
-    
-    call CollectWGSMetrics {
-        input:
-            sample_id = sample_id,
-            bam = bam,
-            genome_fasta = genome_fasta,
-            optional_parameters = optional_parameters,
-            memory_gb = memory_gb
+    bam: {
+      description: "Input BAM file for the sample."
     }
-    
-    output {
-        File wgs_metrics = CollectWGSMetrics.wgs_metrics
+    ref_fasta: {
+      description: "Reference genome FASTA file."
     }
+    ref_index: {
+      description: "Index file for the reference genome FASTA."
+    }
+    ref_dict: {
+      description: "Sequence dictionary for the reference genome."
+    }
+    optional: {
+      description: "Optional additional parameters to pass to the GATK command."
+    }
+    cpu: {
+      description: "Number of CPUs to allocate for the task."
+    }
+    mem_gb: {
+      description: "Total memory in GB to allocate for the task; Java heap is set to mem_gb - 4."
+    }
+    disk: {
+      description: "Disk resource specification."
+    }
+    preemptible: {
+      description: "Preemptible flag for running the task on preemptible nodes (0 = false, >0 = true)."
+    }
+  }
 }
 
-task CollectWGSMetrics {
-    
-    input {
-        String sample_id # Unique identifier for the sample
-        File bam # Input BAM file for whole-genome sequencing analysis
-        File genome_fasta # Reference genome FASTA file
-        String optional_parameters # Additional optional parameters for GATK CollectWgsMetrics
-        Int memory_gb # Memory allocation for the task (in GB)
+workflow CollectWGSMetricsWorkflow {
+  input {
+    String sample_id
+    File bam
+
+    File ref_fasta
+    File ref_index
+    File ref_dict
+
+    String optional = ""
+    Int cpu = 1
+    Int mem_gb = 8
+    String disk = "local-disk 50 HDD"
+    Int preemptible = 0
+  }
+
+  call CollectWGSMetrics {
+    input:
+      sample_id   = sample_id,
+      bam         = bam,
+      ref_fasta   = ref_fasta,
+      ref_index   = ref_index,
+      ref_dict    = ref_dict,
+      optional    = optional,
+      cpu         = cpu,
+      mem_gb      = mem_gb,
+      disk        = disk,
+      preemptible = preemptible
+  }
+
+  output {
+    File wgs_metrics = CollectWGSMetrics.wgs_metrics
+  }
+
+  meta {
+    description: "Workflow to run GATK CollectWGSMetrics using Terra inputs and customizable runtime parameters."
+  }
+
+  parameter_meta {
+    sample_id: {
+      description: "Unique sample identifier used to name the output metrics file."
     }
-    
-    meta {
-        description: "Runs GATK CollectWgsMetrics to generate whole-genome sequencing quality metrics."
+    bam: {
+      description: "BAM file corresponding to the sample."
     }
-    
-    command {
-        gatk --java-options "-Xmx~{memory_gb - 4}G -Djava.io.tmpdir=$TMPDIR" \
-        CollectWgsMetrics \
-        -I ~{bam} \
-        -O ~{sample_id}.wgs_metrics.txt \
-        -R ~{genome_fasta} \
-        ~{optional_parameters}
-        
-        sed -i 's/picard\.analysis\.WgsMetrics/picard\.analysis\.CollectWgsMetrics\$WgsMetrics/' ~{sample_id}.wgs_metrics.txt
+    ref_fasta: {
+      description: "Reference genome FASTA file."
     }
-    
-    runtime {
-        docker: "broadinstitute/gatk:4.6.1.0"
-        memory: "~{memory_gb} GB"
-        cpu: 1
+    ref_index: {
+      description: "Reference genome FASTA index file."
     }
-    
-    output {
-        File wgs_metrics = "~{sample_id}.wgs_metrics.txt"
+    ref_dict: {
+      description: "Reference genome sequence dictionary file."
     }
+    optional: {
+      description: "Optional parameters to pass to the GATK CollectWGSMetrics command."
+    }
+    cpu: {
+      description: "Number of CPUs allocated to the task."
+    }
+    mem_gb: {
+      description: "Amount of memory in GB allocated to the task; Java heap is set to mem_gb - 4."
+    }
+    disk: {
+      description: "Disk specification for the runtime."
+    }
+    preemptible: {
+      description: "Indicator for running the task on a preemptible node (0 for false, >0 for true)."
+    }
+  }
 }
