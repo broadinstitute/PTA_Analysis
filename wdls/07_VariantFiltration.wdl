@@ -2,6 +2,8 @@ version 1.0
 
 # Workflow: VariantFiltration
 # Description: This workflow filters raw variant calls from GATK HaplotypeCaller (with EMIT_ALL_CONFIDENT_SITES)
+# Author: Constantijn Scharlee
+# Date: 2025-02-23
 # using GATK VariantFiltration, following the filtering criteria outlined in the reference paper.
 
 workflow VariantFiltration {
