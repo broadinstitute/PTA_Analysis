@@ -102,9 +102,12 @@ task CombineGVCFsTask {
   }
 
   command <<<
+    # Define the list of GVCF inputs before using them in the command
+    gvcf_args=$(for gvcf in ~{input_gvcfs}; do echo "-V $gvcf"; done)
+
     gatk --java-options "-Xmx~{memory_gb}G" CombineGVCFs \
       -R ~{reference_fasta} \
-      ~{sep=' ' input_gvcfs} \
+      $gvcf_args \
       -O ~{output_gvcf_basename}.g.vcf.gz \
       ~{if defined(interval_file) then "-L " + interval_file else ""}
   >>>
