@@ -104,7 +104,7 @@ task CombineGVCFsTask {
   command <<<
     gatk --java-options "-Xmx~{memory_gb}G" CombineGVCFs \
       -R ~{reference_fasta} \
-      ~{sep=' ' input_gvcfs} \
+      ~{sep=" " prefix("-V ", input_gvcfs)} \
       -O ~{output_gvcf_basename}.g.vcf.gz \
       ~{if defined(interval_file) then "-L " + interval_file else ""}
   >>>
