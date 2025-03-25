@@ -97,7 +97,6 @@ task HaplotypeCaller {
       -R ~{reference_fasta} \
       -I ~{input_bam} \
       -O ~{output_vcf_basename}.vcf.gz \
-      --emit-ref-confidence BP_RESOLUTION \
       ~{if defined(interval_list) then "-L " + interval_list else ""}
   }
 
