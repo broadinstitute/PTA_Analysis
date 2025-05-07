@@ -1,40 +1,34 @@
 version 1.0
 
-# Copyright (c) 2025 Broad Institute, Inc.
-# All rights reserved.
-#
-# This software is made available under the Broad Institute Software License Agreement.
-# For full details, see: https://software.broadinstitute.org/software/license
-
-workflow CombineGVCFs {
+workflow GenomicsDBImportWorkflow {
   meta {
     author: "Shadi Zaheri"
-    description: "Combines multiple GVCF files into a single multi-sample GVCF for joint genotyping using GATK CombineGVCFs."
+    description: "Imports multiple GVCFs into a GenomicsDB workspace for joint genotyping."
   }
 
   parameter_meta {
-    reference_fasta: "Path to the reference genome in FASTA format."
-    reference_fasta_index: "Path to the index file for the reference FASTA."
-    reference_dict: "Path to the sequence dictionary for the reference FASTA."
-    input_gvcfs: "Array of input GVCF files to be merged."
-    input_gvcf_indexes: "Array of index files (.tbi) for the input GVCFs."
-    output_gvcf_basename: "Base name for the combined output GVCF file."
-    interval_file: "Optional: Path to an interval list file (e.g., BED or Picard format) for targeted merging."
-    preemptible_tries: "Number of preemptible retries allowed for each task."
-    memory_gb: "Memory allocated for each task in gigabytes."
-    disk_gb: "Disk space allocated for each task in gigabytes."
-    cpu: "Number of CPU cores allocated for each task."
-    gatk_docker: "Docker image for GATK tools (default: broadinstitute/gatk:4.6.1.0)."
+    reference_fasta: "Reference genome FASTA."
+    reference_fasta_index: "FASTA index (.fai)."
+    reference_dict: "Sequence dictionary (.dict)."
+    gvcf_files: "List of per-sample GVCF files."
+    sample_names: "List of sample names matching the GVCF files."
+    genomicsdb_workspace: "Name of the GenomicsDB workspace directory to create."
+    interval_file: "Optional: Interval list for import."
+    preemptible_tries: "Number of preemptible retries."
+    memory_gb: "Memory per task (GiB)."
+    disk_gb: "Disk per task (GiB)."
+    cpu: "CPU cores per task."
+    gatk_docker: "GATK Docker image (default: broadinstitute/gatk:4.6.1.0)."
   }
 
   input {
     File reference_fasta
     File reference_fasta_index
     File reference_dict
-    Array[File] input_gvcfs
-    Array[File] input_gvcf_indexes
-    String output_gvcf_basename
-    File? interval_file  # Optional
+    Array[File] gvcf_files
+    Array[String] sample_names
+    String genomicsdb_workspace
+    File? interval_file
     Int preemptible_tries = 1
     Int memory_gb = 32
     Int disk_gb = 200
@@ -42,14 +36,14 @@ workflow CombineGVCFs {
     String gatk_docker = "broadinstitute/gatk:4.6.1.0"
   }
 
-  call CombineGVCFsTask {
+  call GenomicsDBImportTask {
     input:
       reference_fasta = reference_fasta,
       reference_fasta_index = reference_fasta_index,
       reference_dict = reference_dict,
-      input_gvcfs = input_gvcfs,
-      input_gvcf_indexes = input_gvcf_indexes,
-      output_gvcf_basename = output_gvcf_basename,
+      gvcf_files = gvcf_files,
+      sample_names = sample_names,
+      genomicsdb_workspace = genomicsdb_workspace,
       interval_file = interval_file,
       preemptible_tries = preemptible_tries,
       memory_gb = memory_gb,
@@ -59,54 +53,47 @@ workflow CombineGVCFs {
   }
 
   output {
-    File combined_gvcf = CombineGVCFsTask.combined_gvcf
-    File combined_gvcf_index = CombineGVCFsTask.combined_gvcf_index
+    String workspace_dir = GenomicsDBImportTask.workspace_dir
   }
 }
 
-# Task: CombineGVCFs
-task CombineGVCFsTask {
+task GenomicsDBImportTask {
   meta {
     author: "Shadi Zaheri"
-    description: "Uses GATK CombineGVCFs to merge multiple per-sample GVCFs into a single GVCF file."
-  }
-
-  parameter_meta {
-    reference_fasta: "Path to the reference genome in FASTA format."
-    reference_fasta_index: "Path to the index file for the reference FASTA."
-    reference_dict: "Path to the sequence dictionary for the reference FASTA."
-    input_gvcfs: "Array of input GVCF files to be merged."
-    input_gvcf_indexes: "Array of index files (.tbi) for the input GVCFs."
-    output_gvcf_basename: "Base name for the combined output GVCF file."
-    interval_file: "Optional: Path to an interval list file (e.g., BED or Picard format) for targeted merging."
-    preemptible_tries: "Number of preemptible retries allowed for each task."
-    memory_gb: "Memory allocated for each task in gigabytes."
-    disk_gb: "Disk space allocated for each task in gigabytes."
-    cpu: "Number of CPU cores allocated for each task."
-    gatk_docker: "Docker image for GATK tools (default: broadinstitute/gatk:4.6.1.0)."
+    description: "Uses GATK GenomicsDBImport to consolidate per-sample GVCFs into a GenomicsDB workspace for joint genotyping."
   }
 
   input {
     File reference_fasta
     File reference_fasta_index
     File reference_dict
-    Array[File] input_gvcfs
-    Array[File] input_gvcf_indexes
-    String output_gvcf_basename
-    File? interval_file  # Optional
+    Array[File] gvcf_files
+    Array[String] sample_names
+    String genomicsdb_workspace
+    File? interval_file
     Int preemptible_tries
     Int memory_gb
     Int disk_gb
     Int cpu
     String gatk_docker
   }
-
+  
   command <<<
-    gatk --java-options "-Xmx~{memory_gb}G -DGATK_STACKTRACE_ON_USER_EXCEPTION=true" CombineGVCFs \
-      -R ~{reference_fasta} \
-      ~{sep=" " prefix("--variant ", input_gvcfs)} \
-      -O ~{output_gvcf_basename}.g.vcf.gz \
-      ~{if defined(interval_file) then "-L " + interval_file else ""}
+    set -euo pipefail
+
+    mkdir -p sample_map_dir
+    > sample_map_dir/sample_map.txt
+
+  
+    for i in $(seq 0 $((${#sample_names[@]} - 1))); do
+      echo "${sample_names[$i]}	${gvcf_files[$i]}" >> sample_map_dir/sample_map.txt
+    done
+
+    gatk --java-options "-Xmx~{memory_gb}G" GenomicsDBImport \
+      --sample-name-map sample_map_dir/sample_map.txt \
+      --genomicsdb-workspace-path ~{genomicsdb_workspace} \
+      --reference ~{reference_fasta} \
+      ~{if defined(interval_file) then "--intervals " + interval_file else ""}
   >>>
 
   runtime {
@@ -118,7 +105,6 @@ task CombineGVCFsTask {
   }
 
   output {
-    File combined_gvcf = "~{output_gvcf_basename}.g.vcf.gz"
-    File combined_gvcf_index = "~{output_gvcf_basename}.g.vcf.gz.tbi"
+    String workspace_dir = genomicsdb_workspace
   }
 }
