@@ -79,7 +79,7 @@ task GenotypeGVCFsTask {
   command {
     gatk --java-options "-Xmx~{memory_gb}G" GenotypeGVCFs \
       -R ~{reference_fasta} \
-      ~{sep=' ' input_gvcfs} \
+      ~{sep=' ' prefix("--variant ", input_gvcfs)} \
       -O ~{output_vcf_basename}.vcf.gz \
       ~{if defined(dbsnp_vcf) then "--dbsnp " + dbsnp_vcf else ""} \
       ~{if defined(interval_list) then "-L " + interval_list else ""}
