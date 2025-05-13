@@ -10,13 +10,29 @@ version 1.0
 # For details, please see https://software.broadinstitute.org/gatk/
 
 # Workflow: GenotypeGVCFs
-# Date: 2025-02-24
-# Description: This workflow performs joint genotyping on multiple GVCFs using GATK's GenotypeGVCFs.
-#              It follows the settings from the reference paper and Broad's best practices.
-#              The workflow allows optional use of a known dbSNP file and an interval list.
-
+# Description: Performs joint genotyping on a single multi-sample GVCF file (e.g., from CombineGVCFs)
+#              using GATK's GenotypeGVCFs following Broad best practices.
+# Author: Shadi Zaheri
+# Date: 2025-05-10
 
 workflow GenotypeGVCFs {
+  parameter_meta {
+    reference_fasta: "Path to the reference genome in FASTA format."
+    reference_fasta_index: "Index for the reference FASTA (.fai)."
+    reference_dict: "Sequence dictionary (.dict) for the reference."
+    combined_gvcf: "Input GVCF file from CombineGVCFs."
+    combined_gvcf_index: "Index (.tbi) for the combined GVCF."
+    output_vcf_basename: "Base name for the final genotyped VCF."
+    dbsnp_vcf: "Optional dbSNP VCF file for annotation."
+    dbsnp_vcf_index: "Index file (.tbi) for dbSNP VCF."
+    interval_list: "Optional BED or interval list file for targeted genotyping."
+    preemptible_tries: "Number of preemptible retries allowed."
+    memory_gb: "Memory allocated to the task (in GB)."
+    disk_gb: "Disk size allocated (in GB)."
+    cpu: "Number of CPU cores used."
+    gatk_docker: "Docker image URI for GATK (default: broadinstitute/gatk:4.6.1.0)."
+  }
+
   input {
     File reference_fasta
     File reference_fasta_index
@@ -59,6 +75,23 @@ workflow GenotypeGVCFs {
 }
 
 task GenotypeGVCFsTask {
+  parameter_meta {
+    reference_fasta: "Reference genome FASTA."
+    reference_fasta_index: "Index file for reference FASTA."
+    reference_dict: "Sequence dictionary for reference FASTA."
+    combined_gvcf: "Combined GVCF input."
+    combined_gvcf_index: "Index (.tbi) for combined GVCF."
+    output_vcf_basename: "Base name for output VCF."
+    dbsnp_vcf: "Optional dbSNP file for annotation."
+    dbsnp_vcf_index: "Index for dbSNP file."
+    interval_list: "Optional list of intervals (e.g., BED)."
+    preemptible_tries: "Number of retries on preemptible VMs."
+    memory_gb: "Memory allocated (in GB)."
+    disk_gb: "Disk size allocated (in GB)."
+    cpu: "Number of CPUs."
+    gatk_docker: "Docker image to use (GATK 4.x expected)."
+  }
+
   input {
     File reference_fasta
     File reference_fasta_index
